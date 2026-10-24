@@ -1,1 +1,1 @@
-"""Database access repositories."""
+"""Database query and persistence operations."""

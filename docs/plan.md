@@ -20,23 +20,23 @@ This plan sequences implementation after requirements and architecture decisions
 
 ## 2. Prerequisites and Decision Gate
 
-Before implementing authentication or private data operations, document and approve the decisions below. A decision may be staged so that only the choices needed by an upcoming milestone block that milestone; do not silently choose defaults.
+Before implementing authentication or private data operations, document and approve the decisions below. The Owner/client decisions needed for the current backend slice are recorded in the specification. A decision may be staged so that only the choices needed by an upcoming milestone block that milestone; do not silently choose defaults.
 
-| Decision | Must be documented before |
+| Decision | Status |
 |---|---|
-| Authentication mechanism, secure logout behavior, cookie/token handling, and initial Owner provisioning | Authentication implementation |
-| Client email/company optionality, validation rules, identifier format, timestamp handling, and allowed update fields | Client implementation |
-| API routes, request/response formats, error schema, and status-code mapping | First API implementation |
-| Policy for missing records versus inaccessible records | First private resource API |
-| List pagination, sorting, and filtering behavior | List endpoint implementation |
+| Authentication mechanism, secure logout behavior, cookie handling, and initial Owner provisioning | Decided for Owner/client slice; see [specification](./specification.md#16-owner-and-client-decisions) |
+| Client email/company optionality, validation, UUID identifiers, UTC timestamps, and allowed update fields | Decided for client slice; see [specification](./specification.md#16-owner-and-client-decisions) |
+| Initial API routes, request/response formats, validation errors, and status mapping | Decided for Owner/client slice; see [specification](./specification.md#16-owner-and-client-decisions) |
+| Missing versus inaccessible client records | Same `404` response; see [specification](./specification.md#16-owner-and-client-decisions) |
+| Client-list pagination, sorting, and filtering | Deferred; clients are unpaginated and newest-first |
 | Project status values, definition of active, and allowed transitions | Project and dashboard implementation |
 | Project update fields/semantics and due-date format/time-zone behavior | Project implementation |
 | Task due-date support, editable fields, and allowed status transitions | Task implementation |
 | Deadline window, time-zone handling, and overdue grouping/display | Dashboard implementation |
-| SQLite setup and migration approach; backup/deployment details when required by the delivery environment | Database foundation and deployment planning, respectively |
+| SQLite setup and Alembic migration approach; backup/deployment details when required by the delivery environment | SQLite/Alembic setup implemented; backup/deployment deferred |
 | Delete/archive policy | Any deletion/archive work; permanent deletion remains excluded from V1 |
 
-The implementation plan does not prescribe a particular authentication scheme, API contract, date/time policy, or validation rule where the specification leaves it open.
+The implementation plan does not prescribe behavior for the remaining project, task, and dashboard decisions where the specification leaves it open.
 
 ## 3. Milestones
 
@@ -44,22 +44,26 @@ The implementation plan does not prescribe a particular authentication scheme, A
 
 **Goal:** Make the first implementation slice sufficiently specified.
 
-**Work:**
+**Status:** Complete for the Owner/client slice. Decisions required by later project, task, and dashboard milestones remain open.
 
-- Resolve the authentication, logout, Owner provisioning, and credential-storage approach.
-- Define the first API error contract and missing-versus-inaccessible record policy.
-- Finalize client field optionality, validation, update semantics, identifier format, and timestamp behavior.
-- Decide whether pagination, sorting, or filtering is part of the first client-list endpoint.
-- Record database setup and migration decisions needed for the MVP.
-- Update the specification and architecture/security/API documents to reflect approved decisions.
+**Completed work:**
+
+- Recorded the authentication, logout, Owner provisioning, and credential-storage approach.
+- Defined the initial API error contract and missing-versus-inaccessible client policy.
+- Finalized client fields, validation, update semantics, identifiers, and timestamp behavior.
+- Deferred pagination/filtering for the initial client-list endpoint.
+- Recorded the SQLite and Alembic migration approach.
+- Updated the specification and architecture to reflect these decisions.
+- Organized the backend Owner/client implementation into routes, services, repositories, schemas, models, dependencies, core, and database modules without changing its API contract.
 
 **Acceptance criteria:**
 
 - Decisions needed by Milestone 1 are explicitly recorded and do not conflict with the V1 scope.
 - The first milestone's API behavior and testable acceptance criteria are documented.
 - No unresolved decision required for Milestone 1 is replaced by an implementation assumption.
+- Backend layers remain independently understandable, with route registration and the Owner-provisioning command preserved.
 
-**Tests:** Documentation review against the specification, product overview, and architecture; no application tests are required for this documentation-only milestone.
+**Verification:** The decisions are recorded in the specification and architecture and are implemented/tested as part of Milestone 1.
 
 ### Milestone 1 — Application foundation, authentication, and clients
 

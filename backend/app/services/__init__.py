@@ -1,1 +1,1 @@
-"""Business logic services."""
+"""Application services and business rules."""

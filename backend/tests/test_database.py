@@ -32,6 +32,7 @@ def test_database_url_is_read_from_environment(monkeypatch: pytest.MonkeyPatch) 
 def test_database_engine_connects_to_sqlite(sqlite_engine: Engine) -> None:
     with sqlite_engine.connect() as connection:
         assert connection.scalar(text("SELECT 1")) == 1
+        assert connection.scalar(text("PRAGMA foreign_keys")) == 1
 
 
 def test_database_dependency_closes_session(

@@ -1,0 +1,183 @@
+from uuid import uuid4
+
+from fastapi.testclient import TestClient
+from sqlalchemy import Engine, select
+from sqlalchemy.orm import Session
+
+from app.auth.provision_owner import provision_owner
+from app.db.session import create_database_engine
+from app.models.client import Client
+from app.models.user import User
+
+
+OWNER_PASSWORD = "correct horse battery staple"
+
+
+def create_owner(db_session: Session, email: str) -> User:
+    provision_owner(db_session, email, OWNER_PASSWORD)
+    return db_session.scalar(select(User).where(User.email == email.lower()))
+
+
+def login(client: TestClient, email: str) -> None:
+    response = client.post(
+        "/api/auth/login",
+        json={"email": email, "password": OWNER_PASSWORD},
+    )
+    assert response.status_code == 200
+
+
+def test_client_create_list_detail_and_update(
+    api_client: TestClient, db_session: Session
+) -> None:
+    owner = create_owner(db_session, "owner@example.com")
+    login(api_client, owner.email)
+
+    created = api_client.post(
+        "/api/clients",
+        json={
+            "name": "  Ali  ",
+            "email": "Ali@example.com",
+            "company": "  Ali Clothing  ",
+        },
+    )
+
+    assert created.status_code == 201
+    client_data = created.json()
+    assert client_data["name"] == "Ali"
+    assert client_data["email"] == "ali@example.com"
+    assert client_data["company"] == "Ali Clothing"
+    assert client_data["created_at"].endswith("Z")
+    assert client_data["updated_at"].endswith("Z")
+    assert "owner_id" not in client_data
+
+    client_id = client_data["id"]
+    listed = api_client.get("/api/clients")
+    detailed = api_client.get(f"/api/clients/{client_id}")
+    assert listed.status_code == detailed.status_code == 200
+    assert [record["id"] for record in listed.json()] == [client_id]
+    assert detailed.json() == client_data
+
+    updated = api_client.patch(
+        f"/api/clients/{client_id}",
+        json={"name": "  Ali Khan ", "email": None, "company": None},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["name"] == "Ali Khan"
+    assert updated.json()["email"] is None
+    assert updated.json()["company"] is None
+    assert updated.json()["created_at"] == client_data["created_at"]
+    assert updated.json()["updated_at"] > client_data["updated_at"]
+
+
+def test_client_create_validation_rejects_blank_missing_and_invalid_fields(
+    api_client: TestClient, db_session: Session
+) -> None:
+    create_owner(db_session, "owner@example.com")
+    login(api_client, "owner@example.com")
+
+    missing_name = api_client.post("/api/clients", json={"company": "Company"})
+    blank_name = api_client.post("/api/clients", json={"name": "  "})
+    invalid_email = api_client.post(
+        "/api/clients", json={"name": "Name", "email": "not-an-email"}
+    )
+    too_long_company = api_client.post(
+        "/api/clients", json={"name": "Name", "company": "x" * 256}
+    )
+
+    assert [
+        missing_name.status_code,
+        blank_name.status_code,
+        invalid_email.status_code,
+        too_long_company.status_code,
+    ] == [422, 422, 422, 422]
+
+
+def test_client_update_rejects_empty_system_and_invalid_updates(
+    api_client: TestClient, db_session: Session
+) -> None:
+    create_owner(db_session, "owner@example.com")
+    login(api_client, "owner@example.com")
+    created = api_client.post("/api/clients", json={"name": "Client"}).json()
+    client_url = f"/api/clients/{created['id']}"
+
+    empty = api_client.patch(client_url, json={})
+    blank_name = api_client.patch(client_url, json={"name": " "})
+    null_name = api_client.patch(client_url, json={"name": None})
+    owner_id = api_client.patch(client_url, json={"owner_id": str(uuid4())})
+    system_id = api_client.patch(client_url, json={"id": str(uuid4())})
+
+    assert [
+        empty.status_code,
+        blank_name.status_code,
+        null_name.status_code,
+        owner_id.status_code,
+        system_id.status_code,
+    ] == [422, 422, 422, 422, 422]
+
+    unchanged = api_client.get(client_url).json()
+    assert unchanged["name"] == "Client"
+
+
+def test_missing_and_foreign_clients_are_indistinguishable_and_unmodified(
+    api_client: TestClient, db_session: Session
+) -> None:
+    first_owner = create_owner(db_session, "first@example.com")
+    second_owner = create_owner(db_session, "second@example.com")
+    login(api_client, first_owner.email)
+    client_data = api_client.post(
+        "/api/clients", json={"name": "First owner's client"}
+    ).json()
+
+    login(api_client, second_owner.email)
+    foreign_url = f"/api/clients/{client_data['id']}"
+    missing_url = f"/api/clients/{uuid4()}"
+
+    assert api_client.get("/api/clients").json() == []
+    foreign_read = api_client.get(foreign_url)
+    missing_read = api_client.get(missing_url)
+    foreign_update = api_client.patch(foreign_url, json={"name": "Stolen"})
+    missing_update = api_client.patch(missing_url, json={"name": "Missing"})
+    assert foreign_read.status_code == missing_read.status_code == 404
+    assert foreign_read.json() == missing_read.json()
+    assert foreign_update.status_code == missing_update.status_code == 404
+    assert foreign_update.json() == missing_update.json()
+
+    login(api_client, first_owner.email)
+    assert api_client.get(foreign_url).json()["name"] == "First owner's client"
+
+
+def test_client_records_persist_across_database_sessions(
+    api_client: TestClient, db_session: Session, test_engine: Engine
+) -> None:
+    owner = create_owner(db_session, "owner@example.com")
+    login(api_client, owner.email)
+    created = api_client.post("/api/clients", json={"name": "Persistent"}).json()
+
+    db_session.commit()
+    test_engine.dispose()
+    reopened_engine = create_database_engine(str(test_engine.url))
+    try:
+        with Session(reopened_engine) as reopened_session:
+            persisted = reopened_session.scalar(
+                select(Client).where(
+                    Client.id == created["id"], Client.owner_id == owner.id
+                )
+            )
+
+        assert persisted is not None
+        assert persisted.name == "Persistent"
+    finally:
+        reopened_engine.dispose()
+
+
+def test_client_delete_is_not_exposed(
+    api_client: TestClient, db_session: Session
+) -> None:
+    create_owner(db_session, "owner@example.com")
+    login(api_client, "owner@example.com")
+    created = api_client.post("/api/clients", json={"name": "Protected"}).json()
+
+    response = api_client.delete(f"/api/clients/{created['id']}")
+
+    assert response.status_code == 405
+    assert api_client.get(f"/api/clients/{created['id']}").status_code == 200

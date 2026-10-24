@@ -6,45 +6,48 @@ This task list turns the staged implementation plan into actionable work items. 
 
 ## Milestone 0 — Requirements and design
 
-- [ ] **T00.1 — Decide authentication and Owner provisioning**  
+- [x] **T00.1 — Decide authentication and Owner provisioning**
   Document the authentication mechanism, secure logout behavior, cookie/token handling, and controlled initial Owner provisioning. Public signup is excluded.
 
-- [ ] **T00.2 — Define API and error contract**  
+- [x] **T00.2 — Define API and error contract**
   Document initial API routes, methods, request/response shapes, error schema, status mapping, and how missing records are distinguished from inaccessible records.
 
-- [ ] **T00.3 — Finalize client data rules**  
+- [x] **T00.3 — Finalize client data rules**
   Decide email/company optionality and validation, identifier format, timestamp handling, and updateable fields.
 
-- [ ] **T00.4 — Decide list behavior**  
+- [x] **T00.4 — Decide list behavior**
   Specify pagination, sorting, and filtering for list operations, or explicitly defer them from the relevant milestone.
 
-- [ ] **T00.5 — Approve persistence setup**  
+- [x] **T00.5 — Approve persistence setup**
   Document SQLite configuration and the database initialization/migration approach required for the MVP.
 
-- [ ] **T00.6 — Update and review design documents**  
+- [x] **T00.6 — Update and review design documents**
   Record approved decisions in the relevant specification, architecture, security, or API documents. Confirm Milestone 1 acceptance criteria are testable and no required decision remains open.
 
 ## Milestone 1 — Application foundation, authentication, and clients
 
 **Depends on:** T00.1–T00.6
 
-- [ ] **T01.1 — Set up frontend and backend applications**  
+- [x] **T01.1 — Set up frontend and backend applications**
   Create separate Next.js and FastAPI application areas in the repository and establish their documented local development workflows.
 
-- [ ] **T01.2 — Configure SQLite persistence**  
+- [x] **T01.2 — Configure SQLite persistence**
   Implement the approved SQLite setup and schema initialization/migration approach. Verify records persist after restart.
 
-- [ ] **T01.3 — Implement Owner authentication**  
+- [x] **T01.3 — Implement Owner authentication**
   Implement controlled Owner provisioning, secure password hashing, login, logout, and authenticated identity handling according to the approved design. Do not add public signup.
 
-- [ ] **T01.4 — Implement client API and ownership enforcement**  
+- [x] **T01.4 — Implement client API and ownership enforcement**
   Implement authenticated client create, list, detail, and update operations. Derive ownership from the authenticated identity; do not trust request-body `owner_id`.
 
 - [ ] **T01.5 — Add client frontend flows**  
   Add login and client create/list/detail/update flows that use the backend API. Frontend visibility or validation must not be treated as a security control.
 
-- [ ] **T01.6 — Test authentication and client operations**  
+- [x] **T01.6 — Test authentication and client operations**
   Cover valid operations, invalid/blank names, missing records, unauthenticated requests, cross-owner access, system-managed fields, and persistence across restart. Confirm permanent deletion is unavailable.
+
+- [x] **T01.7 — Align backend modules with the layered architecture**
+  Keep HTTP handling, application services, persistence repositories, authentication dependencies, security utilities, models, schemas, and database setup in their documented layers without changing API behavior.
 
 ## Milestone 2 — Projects
 

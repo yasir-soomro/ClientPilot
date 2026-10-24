@@ -4,7 +4,7 @@
 |---|---|
 | Product | ClientPilot |
 | Version | V1 |
-| Status | Working draft — review before architecture and implementation |
+| Status | Working draft — Owner/client baseline implemented; later feature decisions remain open |
 | Product baseline | `ClientPilot_V1_Product_Overview_and_User_Guide.pdf` |
 | Initial technology direction | Next.js frontend + FastAPI backend + SQLite database |
 
@@ -32,7 +32,7 @@ The Owner is the single type of application user in V1. The Owner signs in and m
 A business client is a contact record stored by an Owner. Business clients do not sign in and do not receive a portal or dashboard in V1.
 
 ### 3.3 Account provisioning
-Public signup is out of scope. An initial Owner account must be provisioned through a controlled method. The exact provisioning method and authentication strategy must be decided before authentication is implemented.
+Public signup is out of scope. An operator provisions Owner accounts through the controlled backend command documented in section 16; authentication and session decisions for the Owner/client slice are recorded there.
 
 ## 4. V1 Scope
 ### 4.1 Included
@@ -188,7 +188,7 @@ Dashboard acceptance requires tests that compare the displayed/returned metrics 
 - All database queries and mutations must enforce ownership where applicable.
 - Cross-owner access attempts must not reveal or change another Owner's records.
 - Secrets and environment-specific configuration must not be hard-coded in source code.
-- The authentication mechanism (session-based or token-based), secure logout behavior, cookie/token handling, and initial account provisioning method must be decided in the architecture/security design before implementation.
+- The authentication mechanism, secure logout behavior, cookie handling, and initial account provisioning method are decided for the Owner/client slice in section 16.
 ## 12. API Error Contract
 The API must return predictable errors for at least:
 - Invalid or missing fields.
@@ -196,7 +196,7 @@ The API must return predictable errors for at least:
 - Missing/invalid authentication.
 - Invalid relationship references, such as linking a project to an inaccessible client.
 - Invalid task status values.
-The exact response body schema, status-code mapping, and policy for distinguishing a truly missing record from a record owned by someone else must be documented in the API contract before implementation is accepted. Regardless of response choice, cross-owner data must not be disclosed or modified.
+The Owner/client response and status contract, including the missing-versus-inaccessible client policy, is documented in section 16. Define corresponding contracts for future project, task, and dashboard endpoints before implementing them. Regardless of response choice, cross-owner data must not be disclosed or modified.
 ## 13. Initial Architecture Direction
 The initial architecture direction is:
 - Frontend: Next.js, responsible for screens, forms, and user interactions.
@@ -205,7 +205,7 @@ The initial architecture direction is:
 - Communication: frontend and backend communicate through a documented HTTP/JSON API.
 - Backend style: a modular monolith (one backend application separated into internal modules), not microservices.
 - Repository layout: frontend and backend live in separate directories within one project repository.
-The detailed module boundaries, API routes, database schema, and authentication mechanism belong in the architecture and implementation design documents.
+The current Owner/client module boundaries, routes, data rules, and authentication mechanism are documented in the architecture and this specification. Define remaining project, task, and dashboard details before those milestones.
 ## 14. Non-Functional Requirements
 - Security: server-side authentication and ownership checks are mandatory for private data.
 - Persistence: committed records survive application restarts.
@@ -227,21 +227,38 @@ V1 is complete when all of the following are verified:
 - [ ] Automated tests deny cross-owner access and cover validation/error cases.
 - [ ] V1 has no public signup, client portal, payments, AI agent, or permanent-delete operation.
 - [ ] All decisions marked as required before implementation have been resolved in the relevant design/API documents.
-## 16. Decisions to Finalize Before Implementation
-1. Authentication strategy and logout behavior.
-2. Initial Owner provisioning method.
-3. Whether email and company are optional, and their validation rules.
-4. Client/project/task update semantics and allowed fields.
-5. Project status values and status transitions.
-6. Task due-date support and status-transition rules.
-7. Deadline window, time-zone handling, and overdue display behavior.
-8. API error response schema and status-code mapping.
-9. List pagination, sorting, and filtering behavior.
-10. Delete/archive policy; permanent deletion remains excluded from V1.
-11. Local SQLite setup, backups, and future production deployment/database requirements.
-## 17. Next Step
-After reviewing this specification and resolving decisions needed for the first implementation milestone, create docs/architecture.md with:
-1. High-Level Design (HLD): components and request/data flow.
-2. Low-Level Design (LLD): backend modules, entity relationships, and API boundaries.
-3. A first implementation milestone with tests and explicit acceptance criteria.
-Implementation should then proceed in small, testable milestones. Do not generate the whole application in one step.
+## 16. Owner and Client Decisions
+
+The following decisions are the approved V1 implementation baseline for Owner authentication and client management:
+
+1. **Provisioning:** There is no public signup endpoint. An operator provisions an Owner from the backend command line with `uv run python -m app.auth.provision_owner --email <email>`; the password is entered twice using a hidden prompt. Passwords must be 12–128 characters. Emails are trimmed, lowercased, validated, and unique.
+2. **Password storage:** Passwords are hashed with Argon2 through `pwdlib`; plaintext passwords are never persisted.
+3. **Authentication and logout:** Login creates a cryptographically random opaque session token. Only its SHA-256 hash is stored in the database. The browser receives the token in an `HttpOnly`, `SameSite=Strict`, path `/` cookie with an eight-hour default lifetime. Logout deletes the stored session and clears the cookie, immediately invalidating that token. `AUTH_COOKIE_SECURE=true` is required when serving over HTTPS; it is false in the local development template.
+4. **Authentication errors:** Invalid email and password return the same `401` response. Missing, expired, or logged-out sessions return `401`. Session lookup derives the Owner from the persisted session, never from request data.
+5. **Client fields:** Name is required, trimmed, nonblank, and limited to 255 characters. Email and company are optional. A supplied email must be valid and is normalized to lowercase; a blank email is invalid. Company is trimmed, blank company becomes `null`, and its maximum length is 255 characters.
+6. **Identifiers and timestamps:** User and client identifiers are server-generated UUIDs. Created and updated timestamps are UTC and serialized as ISO 8601 UTC. Client timestamps and identifiers cannot be changed through client requests.
+7. **Client updates:** `PATCH /api/clients/{client_id}` updates only supplied `name`, `email`, and `company` fields. An empty patch is invalid. Email and company may be set to `null`; name may not. Unknown/system-managed fields are rejected.
+8. **Client list behavior:** `GET /api/clients` is owner-scoped and ordered newest first, with identifier as a stable tie-breaker. Pagination, sorting options, and filters are deferred.
+9. **Error and missing-record contract:** Request validation uses FastAPI's `422` validation response. Unauthenticated operations return `401`. A client that is missing and a client owned by another Owner both return `404 {"detail":"Client not found"}` so the API does not disclose whether a foreign record exists. Client deletion is not exposed (`405`).
+10. **Routes:** `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/clients`, `GET /api/clients`, `GET /api/clients/{client_id}`, and `PATCH /api/clients/{client_id}`. No public registration or delete route is provided.
+
+### 16.1 Decision rationale
+
+- A persisted opaque session is chosen over a self-contained token so logout can revoke access immediately. The browser token is high-entropy and only its digest is stored, limiting exposure if the session table is read.
+- Argon2 is selected through the existing `pwdlib[argon2]` dependency because passwords require a deliberately slow, salted password hash. The provisioning command keeps plaintext passwords out of shell history and the database; a 12-character minimum raises the cost of guessing.
+- `HttpOnly` prevents ordinary browser scripts from reading the session cookie, `SameSite=Strict` reduces cross-site request forgery risk, and `Secure` is enabled for HTTPS deployments. The local HTTP development template disables `Secure` so the cookie works on localhost.
+- Returning the same `404` for missing and foreign-owned clients avoids confirming another Owner's record exists. Backend queries still apply the Owner filter before returning or changing a client.
+- UTC timestamps and UUID identifiers provide consistent API timestamps and non-sequential resource identifiers. Pagination is deferred to keep the initial client list simple while the dataset is small.
+
+## 17. Decisions Still Open
+
+1. Project status values, active-project definition, and status transitions.
+2. Project update semantics and due-date/time-zone behavior.
+3. Task due-date support, editable fields, and status-transition rules.
+4. Dashboard deadline window, time-zone handling, and overdue display behavior.
+5. List behavior for future project/task endpoints.
+6. Delete/archive policy; permanent deletion remains excluded from V1.
+7. Backups and future production database/deployment requirements.
+
+## 18. Next Step
+Complete the Owner/client frontend flows, then resolve the project decisions before starting project implementation. Update the relevant design documents and tests for each future milestone. Continue in small, testable increments; do not implement unresolved project, task, or dashboard behavior by assumption.
