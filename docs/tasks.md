@@ -44,7 +44,7 @@ This task list turns the staged implementation plan into actionable work items. 
   Implement authenticated client create, list, detail, and update operations. Derive ownership from the authenticated identity; do not trust request-body `owner_id`. Prevent duplicate clients within the Owner's workspace using the approved matching rule.
 
 - [ ] **T01.5 — Add client frontend flows**  
-  Add login and client create/list/detail/update flows that use the backend API. Frontend visibility or validation must not be treated as a security control.
+  Add client create/list/detail/update flows that use the backend API. Authentication pages are tracked in T01.9. Frontend visibility or validation must not be treated as a security control.
 
 - [ ] **T01.6 — Test authentication and client operations**
   Cover multiple registered Owners and unique emails, valid operations, invalid/blank names, duplicate-client behavior under the approved rule, missing records, unauthenticated requests, cross-owner access, system-managed fields, and persistence across restart. Confirm permanent deletion is unavailable.
@@ -54,6 +54,9 @@ This task list turns the staged implementation plan into actionable work items. 
 
 - [x] **T01.8 — Implement public Owner registration**
   Add `POST /api/auth/register` with validated full name, email, password, and E.164 phone number; reject duplicate email, hash passwords with Argon2, return a safe response, migrate Owner profile fields without breaking existing accounts, and test login and ownership behavior.
+
+- [x] **T01.9 — Add authentication frontend**
+  Provide responsive Owner registration and login pages connected to the existing API, with client-side validation, loading and error/success states, session-cookie login, and redirect to an authenticated workspace landing page.
 
 ## Milestone 2 — Projects
 

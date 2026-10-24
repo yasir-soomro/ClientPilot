@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 from fastapi.testclient import TestClient
 import pytest
 from sqlalchemy import select
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
@@ -109,6 +110,37 @@ def test_registered_owner_can_log_in_and_access_only_their_clients(
     assert [item["name"] for item in api_client.get("/api/clients").json()] == [
         "Owned by registered user"
     ]
+
+
+def test_registered_owner_persists_across_database_sessions(
+    api_client: TestClient, test_engine: Engine
+) -> None:
+    registration = api_client.post(
+        "/api/auth/register",
+        json={
+            "email": OWNER_EMAIL,
+            "password": OWNER_PASSWORD,
+            "full_name": OWNER_FULL_NAME,
+            "phone_number": OWNER_PHONE_NUMBER,
+        },
+    )
+    assert registration.status_code == 201
+
+    with Session(test_engine) as reopened_session:
+        owner = reopened_session.scalar(
+            select(User).where(User.id == registration.json()["id"])
+        )
+
+    assert owner is not None
+    assert owner.email == OWNER_EMAIL
+    assert owner.password_hash.startswith("$argon2")
+
+    login_response = api_client.post(
+        "/api/auth/login",
+        json={"email": OWNER_EMAIL, "password": OWNER_PASSWORD},
+    )
+    assert login_response.status_code == 200
+    assert login_response.json()["id"] == registration.json()["id"]
 
 
 def test_registration_rejects_duplicate_email_case_insensitively(

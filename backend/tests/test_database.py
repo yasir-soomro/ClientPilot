@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 from sqlalchemy import Engine, inspect, text
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
 
 import app.db.session as database_session
@@ -21,12 +22,26 @@ def sqlite_engine(tmp_path: Path) -> Generator[Engine, None, None]:
 
 
 def test_database_url_is_read_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    database_url = "sqlite:///configured-from-environment.db"
+    database_name = "configured-from-environment.db"
+    database_url = f"sqlite:///{database_name}"
     monkeypatch.setenv("DATABASE_URL", database_url)
 
     settings = Settings(_env_file=None)
 
-    assert settings.database_url == database_url
+    expected_path = (Path(__file__).resolve().parents[1] / database_name).as_posix()
+    assert make_url(settings.database_url).database == expected_path
+
+
+def test_relative_sqlite_url_is_independent_of_working_directory(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    settings = Settings(_env_file=None, database_url="sqlite:///./clientpilot.db")
+
+    expected_path = (
+        Path(__file__).resolve().parents[1] / "clientpilot.db"
+    ).as_posix()
+    assert make_url(settings.database_url).database == expected_path
 
 
 def test_database_engine_connects_to_sqlite(sqlite_engine: Engine) -> None:
