@@ -16,8 +16,19 @@ class AuthRepository:
             select(User).where(func.lower(User.email) == email.lower())
         )
 
-    def create_user(self, email: str, password_hash: str) -> User:
-        user = User(email=email, password_hash=password_hash)
+    def create_user(
+        self,
+        email: str,
+        password_hash: str,
+        full_name: str,
+        phone_number: str,
+    ) -> User:
+        user = User(
+            email=email,
+            password_hash=password_hash,
+            full_name=full_name,
+            phone_number=phone_number,
+        )
         self.db.add(user)
         self.db.flush()
         return user

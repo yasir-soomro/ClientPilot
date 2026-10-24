@@ -24,7 +24,8 @@ Before implementing authentication or private data operations, document and appr
 
 | Decision | Status |
 |---|---|
-| Authentication mechanism, secure logout behavior, cookie handling, and initial Owner provisioning | Decided for Owner/client slice; see [specification](./specification.md#16-owner-and-client-decisions) |
+| Owner email/password registration, authentication, secure logout behavior, and cookie handling | Decided for Owner/client slice; see [specification](./specification.md#16-owner-and-client-decisions) |
+| Preventing duplicate clients within one Owner's workspace | Required; matching fields, normalization, and duplicate-attempt response remain open in [specification](./specification.md#17-decisions-still-open) |
 | Client email/company optionality, validation, UUID identifiers, UTC timestamps, and allowed update fields | Decided for client slice; see [specification](./specification.md#16-owner-and-client-decisions) |
 | Initial API routes, request/response formats, validation errors, and status mapping | Decided for Owner/client slice; see [specification](./specification.md#16-owner-and-client-decisions) |
 | Missing versus inaccessible client records | Same `404` response; see [specification](./specification.md#16-owner-and-client-decisions) |
@@ -44,11 +45,13 @@ The implementation plan does not prescribe behavior for the remaining project, t
 
 **Goal:** Make the first implementation slice sufficiently specified.
 
-**Status:** Complete for the Owner/client slice. Decisions required by later project, task, and dashboard milestones remain open.
+**Status:** Baseline is documented; the newly required owner-scoped client duplicate rule remains open and must be decided before client-slice acceptance. Decisions for later project, task, and dashboard milestones also remain open.
 
 **Completed work:**
 
-- Recorded the authentication, logout, Owner provisioning, and credential-storage approach.
+- Recorded the registration, authentication, logout, and credential-storage approach.
+- Added the approved public email/password Owner registration route, validation, duplicate-email behavior, safe response, and registration/login separation.
+- Extended registration to require validated full name and E.164 phone number, persisted as Owner profile fields with a backward-compatible migration for legacy accounts.
 - Defined the initial API error contract and missing-versus-inaccessible client policy.
 - Finalized client fields, validation, update semantics, identifiers, and timestamp behavior.
 - Deferred pagination/filtering for the initial client-list endpoint.
@@ -61,7 +64,7 @@ The implementation plan does not prescribe behavior for the remaining project, t
 - Decisions needed by Milestone 1 are explicitly recorded and do not conflict with the V1 scope.
 - The first milestone's API behavior and testable acceptance criteria are documented.
 - No unresolved decision required for Milestone 1 is replaced by an implementation assumption.
-- Backend layers remain independently understandable, with route registration and the Owner-provisioning command preserved.
+- Backend layers remain independently understandable, with route registration and Owner registration preserved.
 
 **Verification:** The decisions are recorded in the specification and architecture and are implemented/tested as part of Milestone 1.
 
@@ -75,18 +78,23 @@ The implementation plan does not prescribe behavior for the remaining project, t
 
 - Set up the Next.js frontend and FastAPI backend in separate application folders.
 - Configure SQLite persistence and the agreed database initialization/migration approach.
-- Implement controlled Owner provisioning and login/logout using the approved security design; do not add public signup.
+- Implement public email/password Owner registration and login/logout using the approved security design.
 - Implement client create, list, detail, and update operations.
 - Enforce authentication and current-Owner scoping in the backend.
+- Prevent duplicate clients within each Owner's workspace using the matching rule approved in the specification.
 - Add client UI flows that use the backend API; do not rely on frontend checks for security.
 
 **Acceptance criteria:**
 
-- Only a provisioned Owner can authenticate; passwords are stored using an approved secure password-hashing approach.
+- A registered Owner can authenticate; passwords are stored using Argon2 and never in plaintext.
+- Multiple Owners can register with distinct email addresses; email uniqueness applies across all Owner accounts.
+- Registration rejects invalid input and duplicate emails, returns no password data, and does not implicitly create a login session.
+- Registration requires a nonblank name of at most 255 characters and an international E.164 phone number; existing accounts remain readable with null profile fields until updated through a future approved flow.
 - Unauthenticated requests cannot access private client operations.
 - An Owner can create, list, view, and update their own clients.
 - Missing or blank client names are rejected; other fields follow the approved validation rules.
 - Client list results are restricted to the authenticated Owner.
+- Duplicate client records are prevented within an Owner's workspace according to the matching rule approved before implementation; another Owner's records do not participate in that check.
 - Another Owner's client cannot be viewed or changed by guessing its identifier.
 - Ordinary requests cannot overwrite system-managed ownership, identifiers, or timestamps.
 - Successful client changes persist across application restarts.
@@ -95,7 +103,10 @@ The implementation plan does not prescribe behavior for the remaining project, t
 **Tests:**
 
 - Authentication success/failure, logout behavior, and unauthenticated private requests.
+- Registration validation, duplicate-email rejection, hashed password persistence, safe response shape, and successful login after registration.
+- Required name/phone validation, E.164 phone format, profile-field persistence, and legacy-user migration compatibility.
 - Valid client create/list/detail/update flows and invalid or blank required name.
+- Duplicate client attempts within one Owner's workspace, using the approved matching criteria; identical client data in separate Owners' workspaces remains isolated.
 - Missing record and cross-owner read/update attempts.
 - Rejection/protection of system-managed fields.
 - Persistence across application restart.
@@ -198,6 +209,7 @@ The implementation plan does not prescribe behavior for the remaining project, t
 
 - Run frontend/backend integration and regression tests.
 - Verify ownership enforcement across client → project → task relationships and dashboard queries.
+- Verify that every private API operation is owner-scoped, including project/task relationships and dashboard results.
 - Verify database persistence across application restarts.
 - Review API and user-facing behavior against the approved specification.
 - Update setup, API, and operational documentation for the implemented behavior.
@@ -206,7 +218,7 @@ The implementation plan does not prescribe behavior for the remaining project, t
 
 - The V1 completion checklist in the specification is satisfied or each remaining item is explicitly documented as incomplete.
 - Automated tests cover successful flows, validation failures, missing records, authentication failures, and cross-owner access.
-- No public signup, client portal, marketplace, payments, AI features, teams, permanent deletion, or other excluded capability has been introduced.
+- No client portal, marketplace, payments, AI features, teams, permanent deletion, or other excluded capability has been introduced. Public email/password Owner registration is an approved V1 feature.
 - The approved API error contract and setup instructions match the implementation.
 - All relevant tests pass; failures and tests not run are reported accurately.
 

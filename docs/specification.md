@@ -15,28 +15,29 @@ ClientPilot V1 does not find clients, run a client/provider marketplace, or give
 
 ## 2. Goals and Success Criteria
 V1 should allow its Owner to:
-1. Log in to a private workspace and log out securely.
-2. Create, list, view, and update client records.
-3. Create, list, view, and update projects linked to their own clients.
-4. Create and view tasks within accessible projects and update task status.
-5. See dashboard counts, task-based progress, pending tasks, and deadlines.
-6. Close and restart the application without losing saved records.
-7. Be prevented from accessing another Owner's private records, including by guessing record IDs.
+1. Register multiple Owner accounts with unique email addresses and log in/out securely.
+2. Use a private workspace where each Owner can access only their own data.
+3. Create, list, view, and update multiple client records without duplicates within that Owner's workspace.
+4. Create, list, view, and update projects linked to their own clients.
+5. Create and view tasks within accessible projects and update task status.
+6. See dashboard counts, task-based progress, pending tasks, and deadlines.
+7. Close and restart the application without losing saved records.
+8. Be prevented from accessing another Owner's private records, including by guessing record IDs.
 V1 is successful when the above behaviors work and are covered by automated tests, including invalid-input and cross-owner-access cases.
 
 ## 3. Users and Access Model
 ### 3.1 Owner
-The Owner is the single type of application user in V1. The Owner signs in and manages their own workspace.
+Owners are the application's account users in V1. Multiple Owners can register, each with a unique email address, and each Owner signs in to manage a private workspace. An Owner can access only records belonging to that workspace.
 
 ### 3.2 Business client
 A business client is a contact record stored by an Owner. Business clients do not sign in and do not receive a portal or dashboard in V1.
 
-### 3.3 Account provisioning
-Public signup is out of scope. An operator provisions Owner accounts through the controlled backend command documented in section 16; authentication and session decisions for the Owner/client slice are recorded there.
+### 3.3 Account registration
+Owner accounts are created through public email/password registration. Registration creates an account but does not sign the user in; login and session decisions are recorded in section 16.
 
 ## 4. V1 Scope
 ### 4.1 Included
-- Owner login and logout.
+- Owner email/password registration, login, and logout.
 - Client create, list, detail, and update.
 - Project create, list, detail, and update.
 - Task create and list/view.
@@ -47,7 +48,7 @@ Public signup is out of scope. An operator provisions Owner accounts through the
 - Server-side authentication, authorization, and record ownership checks.
 - Automated tests for successful operations, validation failures, missing records, authentication failures, and cross-owner access attempts.
 ### 4.2 Excluded
-- Business-client accounts, client portal, or public signup.
+- Business-client accounts or a client portal.
 - Marketplace or client/provider matching.
 - In-app chat, notifications, file uploads, or approval/revision workflow.
 - Invoices, payments, or escrow.
@@ -63,6 +64,8 @@ Future features belong to later versions and must not be pulled into V1 without 
 - Task: an actionable work item linked to one Project.
 **Relationships:**
 - One Owner can have many Clients.
+- Owner email addresses are unique across the application.
+- Duplicate Client records must be prevented within one Owner's workspace. The fields and normalization used to identify duplicates remain undecided.
 - One Client can have many Projects.
 - One Project can have many Tasks.
 - Every Client must belong to an Owner.
@@ -93,6 +96,7 @@ Ownership values are system-controlled. The backend must not trust an owner_id p
 
 ### 7.2 Operations
 - Create: an authenticated Owner can create a client in their workspace.
+- Duplicate prevention: an Owner cannot create duplicate client records within their workspace. The duplicate-matching fields, normalization rules, and conflict response must be finalized before implementation; do not infer that client name, email, or another field alone defines a duplicate.
 - List: an Owner receives only their own client records.
 - Detail: an Owner can view a client record they own.
 - Update: an Owner can update an existing client record they own.
@@ -102,6 +106,7 @@ Ownership values are system-controlled. The backend must not trust an owner_id p
 - Updates must not allow the caller to change `id`, `owner_id`, `created_at`, or other system-managed fields.
 - Create, list, detail, and update require authentication.
 - Client listing must be scoped to the authenticated Owner.
+- Client duplicate checks must be scoped to the authenticated Owner and must not treat another Owner's records as duplicates.
 - A caller must not view or modify another Owner's client by supplying or guessing its ID.
 - The exact API response format and status code for each validation, missing-record, and unauthorized case must be finalized in the API error contract.
 ### 7.4 Client acceptance criteria
@@ -115,6 +120,7 @@ Client Management is accepted when tests verify that:
 7. Successful create/update operations persist, and updated_at changes after a successful update.
 8. Client records remain available after restart.
 9. Permanent deletion is not available in the V1 interface or API.
+10. Duplicate clients are rejected within an Owner's workspace according to the approved matching rule; identical data in different Owners' workspaces remains isolated.
 ## 8. Project Management Requirements
 ### 8.1 Required behavior
 - An authenticated Owner can create a project linked to one of their own clients.
@@ -181,14 +187,14 @@ All dashboard metrics must be calculated from persisted records belonging to the
 
 Dashboard acceptance requires tests that compare the displayed/returned metrics with the authenticated Owner's actual database records, including zero-task and overdue cases.
 ## 11. Authentication and Security Requirements
-- Only a provisioned Owner account can authenticate in V1; public signup is out of scope.
+- Only an Owner account created through registration can authenticate in V1.
 - Passwords must never be stored in plaintext. Use a suitable password-hashing approach.
 - Unauthenticated private API requests must be rejected.
 - The backend must establish the current Owner from the authenticated identity.
-- All database queries and mutations must enforce ownership where applicable.
+- Every private API operation, including client, project, task, and dashboard operations, must enforce ownership on database reads and mutations. Ownership must be checked through the relevant relationships (Owner → Client → Project → Task).
 - Cross-owner access attempts must not reveal or change another Owner's records.
 - Secrets and environment-specific configuration must not be hard-coded in source code.
-- The authentication mechanism, secure logout behavior, cookie handling, and initial account provisioning method are decided for the Owner/client slice in section 16.
+- The registration, authentication, secure logout behavior, and cookie handling are decided for the Owner/client slice in section 16.
 ## 12. API Error Contract
 The API must return predictable errors for at least:
 - Invalid or missing fields.
@@ -216,7 +222,7 @@ The current Owner/client module boundaries, routes, data rules, and authenticati
 Performance targets, backup/restore requirements, deployment environment, and production database migration criteria remain to be defined when deployment scope is planned.
 ## 15. V1 Completion Checklist
 V1 is complete when all of the following are verified:
-- [ ] Provisioned Owner can log in and log out.
+- [ ] An Owner can register, then log in and log out.
 - [ ] Owner can create, list, view, and update their own clients.
 - [ ] Owner can create, list, view, and update projects linked to their own clients.
 - [ ] Owner can create and view tasks and update task status.
@@ -225,40 +231,43 @@ V1 is complete when all of the following are verified:
 - [ ] Data persists after an application restart.
 - [ ] Unauthenticated requests cannot access private records.
 - [ ] Automated tests deny cross-owner access and cover validation/error cases.
-- [ ] V1 has no public signup, client portal, payments, AI agent, or permanent-delete operation.
+- [ ] V1 has no client portal, payments, AI agent, or permanent-delete operation.
 - [ ] All decisions marked as required before implementation have been resolved in the relevant design/API documents.
 ## 16. Owner and Client Decisions
 
-The following decisions are the approved V1 implementation baseline for Owner authentication and client management:
+The following decisions are the approved V1 implementation baseline for Owner registration/authentication and client management. The approved public-registration change supersedes the earlier no-public-signup decision.
 
-1. **Provisioning:** There is no public signup endpoint. An operator provisions an Owner from the backend command line with `uv run python -m app.auth.provision_owner --email <email>`; the password is entered twice using a hidden prompt. Passwords must be 12–128 characters. Emails are trimmed, lowercased, validated, and unique.
+1. **Registration:** Multiple Owners may register through `POST /api/auth/register`; each requires `full_name`, `email`, `password`, and `phone_number`. Full name is trimmed, nonblank, and at most 255 characters. Emails are trimmed, validated, normalized to lowercase, and unique across all Owner accounts; passwords must be 12–128 characters. Phone numbers must use E.164 format (`+` followed by 7–15 digits, with a nonzero first digit) and are stored in that format. Successful registration returns `201` with the safe Owner representation (`id`, `full_name`, `email`, `phone_number`, `created_at`, and `updated_at`), does not include password data, and does not create a login session. The user must call `POST /api/auth/login`. There is no public account-management or role-assignment endpoint.
 2. **Password storage:** Passwords are hashed with Argon2 through `pwdlib`; plaintext passwords are never persisted.
 3. **Authentication and logout:** Login creates a cryptographically random opaque session token. Only its SHA-256 hash is stored in the database. The browser receives the token in an `HttpOnly`, `SameSite=Strict`, path `/` cookie with an eight-hour default lifetime. Logout deletes the stored session and clears the cookie, immediately invalidating that token. `AUTH_COOKIE_SECURE=true` is required when serving over HTTPS; it is false in the local development template.
 4. **Authentication errors:** Invalid email and password return the same `401` response. Missing, expired, or logged-out sessions return `401`. Session lookup derives the Owner from the persisted session, never from request data.
-5. **Client fields:** Name is required, trimmed, nonblank, and limited to 255 characters. Email and company are optional. A supplied email must be valid and is normalized to lowercase; a blank email is invalid. Company is trimmed, blank company becomes `null`, and its maximum length is 255 characters.
+5. **Client fields:** Name is required, trimmed, nonblank, and limited to 255 characters. Email and company are optional. A supplied email must be valid and is normalized to lowercase; a blank email is invalid. Company is trimmed, blank company becomes `null`, and its maximum length is 255 characters. Duplicate detection within one Owner's workspace is required, but its matching fields and normalization rules are not yet decided.
 6. **Identifiers and timestamps:** User and client identifiers are server-generated UUIDs. Created and updated timestamps are UTC and serialized as ISO 8601 UTC. Client timestamps and identifiers cannot be changed through client requests.
 7. **Client updates:** `PATCH /api/clients/{client_id}` updates only supplied `name`, `email`, and `company` fields. An empty patch is invalid. Email and company may be set to `null`; name may not. Unknown/system-managed fields are rejected.
 8. **Client list behavior:** `GET /api/clients` is owner-scoped and ordered newest first, with identifier as a stable tie-breaker. Pagination, sorting options, and filters are deferred.
-9. **Error and missing-record contract:** Request validation uses FastAPI's `422` validation response. Unauthenticated operations return `401`. A client that is missing and a client owned by another Owner both return `404 {"detail":"Client not found"}` so the API does not disclose whether a foreign record exists. Client deletion is not exposed (`405`).
-10. **Routes:** `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/clients`, `GET /api/clients`, `GET /api/clients/{client_id}`, and `PATCH /api/clients/{client_id}`. No public registration or delete route is provided.
+9. **Error and missing-record contract:** Request validation uses FastAPI's `422` validation response. Duplicate registration email returns `409 {"detail":"An owner with this email already exists"}`. Invalid login credentials return the same `401` response. Unauthenticated private operations return `401`. A client that is missing and a client owned by another Owner both return `404 {"detail":"Client not found"}` so the API does not disclose whether a foreign record exists. Client deletion is not exposed (`405`).
+10. **Routes:** `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/clients`, `GET /api/clients`, `GET /api/clients/{client_id}`, and `PATCH /api/clients/{client_id}`. No public delete or role-management route is provided.
 
 ### 16.1 Decision rationale
 
 - A persisted opaque session is chosen over a self-contained token so logout can revoke access immediately. The browser token is high-entropy and only its digest is stored, limiting exposure if the session table is read.
-- Argon2 is selected through the existing `pwdlib[argon2]` dependency because passwords require a deliberately slow, salted password hash. The provisioning command keeps plaintext passwords out of shell history and the database; a 12-character minimum raises the cost of guessing.
+- Argon2 is selected through the existing `pwdlib[argon2]` dependency because passwords require a deliberately slow, salted password hash. Registration hashes passwords before persistence; API transport must use HTTPS outside local development. A 12-character minimum raises the cost of guessing.
+- Full name and phone number are nullable in the database only to preserve existing accounts when the profile migration is applied. New registrations must provide both validated values; the safe response exposes `null` for legacy accounts that predate these fields.
+- Registration intentionally does not create a session, so account creation and authentication remain separate operations. The unique database constraint remains authoritative if concurrent requests attempt the same email.
 - `HttpOnly` prevents ordinary browser scripts from reading the session cookie, `SameSite=Strict` reduces cross-site request forgery risk, and `Secure` is enabled for HTTPS deployments. The local HTTP development template disables `Secure` so the cookie works on localhost.
 - Returning the same `404` for missing and foreign-owned clients avoids confirming another Owner's record exists. Backend queries still apply the Owner filter before returning or changing a client.
 - UTC timestamps and UUID identifiers provide consistent API timestamps and non-sequential resource identifiers. Pagination is deferred to keep the initial client list simple while the dataset is small.
 
 ## 17. Decisions Still Open
 
-1. Project status values, active-project definition, and status transitions.
-2. Project update semantics and due-date/time-zone behavior.
-3. Task due-date support, editable fields, and status-transition rules.
-4. Dashboard deadline window, time-zone handling, and overdue display behavior.
-5. List behavior for future project/task endpoints.
-6. Delete/archive policy; permanent deletion remains excluded from V1.
-7. Backups and future production database/deployment requirements.
+1. Which client fields and normalization rules define a duplicate within one Owner's workspace, and the response when a duplicate is attempted.
+2. Project status values, active-project definition, and status transitions.
+3. Project update semantics and due-date/time-zone behavior.
+4. Task due-date support, editable fields, and status-transition rules.
+5. Dashboard deadline window, time-zone handling, and overdue display behavior.
+6. List behavior for future project/task endpoints.
+7. Delete/archive policy; permanent deletion remains excluded from V1.
+8. Backups and future production database/deployment requirements.
 
 ## 18. Next Step
 Complete the Owner/client frontend flows, then resolve the project decisions before starting project implementation. Update the relevant design documents and tests for each future milestone. Continue in small, testable increments; do not implement unresolved project, task, or dashboard behavior by assumption.

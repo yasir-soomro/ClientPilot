@@ -4,17 +4,21 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
-from app.auth.provision_owner import provision_owner
 from app.db.session import create_database_engine
 from app.models.client import Client
 from app.models.user import User
+from app.services.auth_service import AuthService
 
 
 OWNER_PASSWORD = "correct horse battery staple"
+OWNER_FULL_NAME = "Test Owner"
+OWNER_PHONE_NUMBER = "+14155552671"
 
 
 def create_owner(db_session: Session, email: str) -> User:
-    provision_owner(db_session, email, OWNER_PASSWORD)
+    AuthService(db_session).register_owner(
+        email, OWNER_PASSWORD, OWNER_FULL_NAME, OWNER_PHONE_NUMBER
+    )
     return db_session.scalar(select(User).where(User.email == email.lower()))
 
 

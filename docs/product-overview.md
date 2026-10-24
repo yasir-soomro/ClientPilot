@@ -5,6 +5,8 @@
 > **Document status:** Draft 0.1 — requirements still need to be finalized.
 >
 > **Version scope:** ClientPilot V1 only. Future product versions must be planned separately.
+>
+> **Current requirements:** Approved V1 clarifications in the [software specification](./specification.md) supersede this source-derived overview where they differ.
 
 ## 1. Project Baseline
 
@@ -55,13 +57,13 @@ ClientPilot V1 does **not** find new clients or provide a marketplace where clie
 - The **Owner** is the account user who logs in and uses the application.
 - A **business client** is a contact record stored in the owner's workspace.
 - Business clients do not receive their own logins or dashboards in V1.
-- A visitor may see the public landing page and login screen, but cannot access private dashboards or records without authentication.
+- Multiple Owners may register with unique email addresses. A visitor cannot access private dashboards or records without authentication.
 
 ## 5. Owner User Journey
 
 Example: Ali contacts the freelancer on WhatsApp to request a website. The freelancer uses ClientPilot to organize and deliver Ali's project.
 
-1. **Log in:** The owner enters credentials for the provisioned owner account. After verification, the private dashboard opens.
+1. **Register and log in:** An Owner registers with a unique email address, then signs in to their private workspace.
 2. **Add a client:** The owner opens Clients, chooses Add Client, enters the required details, and saves the record. Example: name `Ali`, email `ali@example.com`, company `Ali Clothing`.
 3. **Create a project:** The owner creates a project linked to Ali's client record, enters a project name, and optionally sets a due date. Example: `Ali Clothing Website`.
 4. **Create tasks:** The owner divides delivery work into actionable tasks. Examples: Homepage design, frontend build, FastAPI integration, and testing.
@@ -94,7 +96,7 @@ Only an authenticated owner may perform private operations.
 
 ### 8.2 Client ownership
 
-An owner may view or update only their own client records.
+Each Owner has a private workspace and may view or update only their own client records. Duplicate clients are not allowed within one Owner's workspace; the matching rule must be finalized in the detailed specification.
 
 ### 8.3 Project-client relationship
 
@@ -142,7 +144,8 @@ Invalid input, missing records, and unauthorized access must produce predictable
 
 Relationships:
 
-- One owner can have multiple clients.
+- Multiple Owners can register with distinct email addresses; each has a private workspace.
+- One Owner can have multiple clients, without duplicate client records in that workspace.
 - One client can have multiple projects.
 - One project can have multiple tasks.
 
@@ -183,7 +186,7 @@ This document defines the initial stack direction only. Exact module structure, 
 
 - Controlled owner-account setup and secure login/logout.
 - Client records: create, list/view, and update.
-- Projects: create, list/view, and update; each project is linked to a client.
+- Projects: create,pro list/view, and update; each project is linked to a client.
 - Tasks: create, list/view, and update task status; each task is linked to a project.
 - Dashboard counts, task-based progress, and upcoming deadlines.
 - Database persistence, input validation, and ownership enforcement.
@@ -194,7 +197,7 @@ This document defines the initial stack direction only. Exact module structure, 
 The following are not included in V1:
 
 - Business-client login accounts or a client portal.
-- Public signup, a provider marketplace, or client-provider matching.
+- Business-client signup, a provider marketplace, or client-provider matching. Public Owner registration is included in V1.
 - In-app chat, notifications, file uploads, or approval/revision workflows.
 - Invoices, payment processing, or escrow.
 - AI agents, automatic project planning, or AI-based recommendations.
@@ -216,7 +219,9 @@ The following are not included in V1:
 V1 is considered complete when all of the following are verified:
 
 - The owner can log in and log out using valid credentials.
+- Multiple Owners can register with unique email addresses and access only their own workspaces.
 - The owner can create, view, and update clients.
+- An Owner cannot create duplicate clients within their workspace under the approved matching rule.
 - The owner can create a project for their own client, but not for another owner's client.
 - The owner can create tasks within a project and update task status.
 - The dashboard calculates counts and progress from actual database records.
@@ -229,6 +234,7 @@ V1 is considered complete when all of the following are verified:
 
 The source PDF explicitly leaves these decisions open for the detailed specification / LLD:
 
+- Which client fields and normalization rules determine whether records are duplicates within one Owner's workspace.
 - Exact project status values and allowed status transitions.
 - Client/project update fields and validation requirements.
 - Deletion/archival policy.

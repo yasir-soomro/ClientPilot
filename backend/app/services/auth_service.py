@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
 from pydantic import EmailStr, TypeAdapter
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.security import (
@@ -30,17 +31,34 @@ class AuthService:
         self.db = db
         self.repository = AuthRepository(db)
 
-    def provision_owner(self, email: str, password: str) -> User:
+    def register_owner(
+        self,
+        email: str,
+        password: str,
+        full_name: str,
+        phone_number: str,
+    ) -> User:
         if not 12 <= len(password) <= 128:
             raise ValueError("Password must be between 12 and 128 characters.")
         normalized_email = str(_email_adapter.validate_python(email.strip())).lower()
         if self.repository.get_user_by_email(normalized_email) is not None:
             raise DuplicateOwnerError("An owner with this email already exists.")
 
-        user = self.repository.create_user(
-            email=normalized_email, password_hash=hash_password(password)
-        )
-        self.db.commit()
+        try:
+            user = self.repository.create_user(
+                email=normalized_email,
+                password_hash=hash_password(password),
+                full_name=full_name,
+                phone_number=phone_number,
+            )
+            self.db.commit()
+        except IntegrityError:
+            self.db.rollback()
+            if self.repository.get_user_by_email(normalized_email) is not None:
+                raise DuplicateOwnerError(
+                    "An owner with this email already exists."
+                ) from None
+            raise
         self.db.refresh(user)
         return user
 

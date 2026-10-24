@@ -9,10 +9,34 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.dependencies.auth import CurrentUser
 from app.db.session import get_db
-from app.schemas.auth import LoginRequest, OwnerRead
-from app.services.auth_service import AuthService, InvalidCredentialsError
+from app.schemas.auth import LoginRequest, OwnerRead, RegisterRequest
+from app.services.auth_service import (
+    AuthService,
+    DuplicateOwnerError,
+    InvalidCredentialsError,
+)
 
 router = APIRouter()
+
+
+@router.post("/register", response_model=OwnerRead, status_code=status.HTTP_201_CREATED)
+def register(
+    payload: RegisterRequest,
+    db: Annotated[Session, Depends(get_db)],
+) -> OwnerRead:
+    try:
+        owner = AuthService(db).register_owner(
+            email=str(payload.email),
+            password=payload.password.get_secret_value(),
+            full_name=payload.full_name,
+            phone_number=payload.phone_number,
+        )
+    except DuplicateOwnerError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An owner with this email already exists",
+        ) from None
+    return OwnerRead.model_validate(owner)
 
 
 @router.post("/login", response_model=OwnerRead)

@@ -6,23 +6,26 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
-from app.auth.provision_owner import provision_owner
 from app.core.security import hash_session_token
 from app.models.auth_session import AuthSession
 from app.models.user import User
-from app.services.auth_service import DuplicateOwnerError
+from app.services.auth_service import AuthService, DuplicateOwnerError
 
 
 OWNER_EMAIL = "owner@example.com"
 OWNER_PASSWORD = "correct horse battery staple"
+OWNER_FULL_NAME = "Test Owner"
+OWNER_PHONE_NUMBER = "+14155552671"
 
 
 def create_owner(db_session: Session, email: str = OWNER_EMAIL) -> User:
-    provision_owner(db_session, email, OWNER_PASSWORD)
+    AuthService(db_session).register_owner(
+        email, OWNER_PASSWORD, OWNER_FULL_NAME, OWNER_PHONE_NUMBER
+    )
     return db_session.scalar(select(User).where(User.email == email.lower()))
 
 
-def test_controlled_provisioning_stores_only_a_password_hash(
+def test_registration_stores_only_a_password_hash(
     db_session: Session,
 ) -> None:
     owner = create_owner(db_session)
@@ -32,15 +35,136 @@ def test_controlled_provisioning_stores_only_a_password_hash(
     assert owner.password_hash.startswith("$argon2")
 
 
-def test_provisioning_rejects_short_and_duplicate_password_accounts(
+def test_registration_service_rejects_invalid_password_and_duplicate_email(
     db_session: Session,
 ) -> None:
     with pytest.raises(ValueError, match="12 and 128"):
-        provision_owner(db_session, "short@example.com", "short")
+        AuthService(db_session).register_owner(
+            "short@example.com", "short", OWNER_FULL_NAME, OWNER_PHONE_NUMBER
+        )
 
     create_owner(db_session)
     with pytest.raises(DuplicateOwnerError):
-        provision_owner(db_session, OWNER_EMAIL, OWNER_PASSWORD)
+        AuthService(db_session).register_owner(
+            OWNER_EMAIL, OWNER_PASSWORD, OWNER_FULL_NAME, OWNER_PHONE_NUMBER
+        )
+
+
+def test_registration_creates_owner_with_hashed_password_and_safe_response(
+    api_client: TestClient, db_session: Session
+) -> None:
+    response = api_client.post(
+        "/api/auth/register",
+        json={
+            "email": "  New.Owner@Example.com ",
+            "password": OWNER_PASSWORD,
+            "full_name": "  New Owner  ",
+            "phone_number": f" {OWNER_PHONE_NUMBER} ",
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["email"] == "new.owner@example.com"
+    assert response.json()["full_name"] == "New Owner"
+    assert response.json()["phone_number"] == OWNER_PHONE_NUMBER
+    assert "password" not in response.json()
+    assert "password_hash" not in response.json()
+
+    owner = db_session.scalar(
+        select(User).where(User.email == "new.owner@example.com")
+    )
+    assert owner is not None
+    assert owner.password_hash != OWNER_PASSWORD
+    assert owner.password_hash.startswith("$argon2")
+    assert owner.full_name == "New Owner"
+    assert owner.phone_number == OWNER_PHONE_NUMBER
+    assert api_client.get("/api/clients").status_code == 401
+
+
+def test_registered_owner_can_log_in_and_access_only_their_clients(
+    api_client: TestClient,
+) -> None:
+    registration = api_client.post(
+        "/api/auth/register",
+        json={
+            "email": OWNER_EMAIL,
+            "password": OWNER_PASSWORD,
+            "full_name": OWNER_FULL_NAME,
+            "phone_number": OWNER_PHONE_NUMBER,
+        },
+    )
+    assert registration.status_code == 201
+
+    login_response = api_client.post(
+        "/api/auth/login",
+        json={"email": OWNER_EMAIL, "password": OWNER_PASSWORD},
+    )
+
+    assert login_response.status_code == 200
+    assert api_client.get("/api/auth/me").json()["id"] == registration.json()["id"]
+    created_client = api_client.post(
+        "/api/clients", json={"name": "Owned by registered user"}
+    )
+    assert created_client.status_code == 201
+    assert [item["name"] for item in api_client.get("/api/clients").json()] == [
+        "Owned by registered user"
+    ]
+
+
+def test_registration_rejects_duplicate_email_case_insensitively(
+    api_client: TestClient,
+) -> None:
+    assert api_client.post(
+        "/api/auth/register",
+        json={
+            "email": OWNER_EMAIL,
+            "password": OWNER_PASSWORD,
+            "full_name": OWNER_FULL_NAME,
+            "phone_number": OWNER_PHONE_NUMBER,
+        },
+    ).status_code == 201
+
+    duplicate = api_client.post(
+        "/api/auth/register",
+        json={
+            "email": "  OWNER@EXAMPLE.COM ",
+            "password": OWNER_PASSWORD,
+            "full_name": OWNER_FULL_NAME,
+            "phone_number": OWNER_PHONE_NUMBER,
+        },
+    )
+
+    assert duplicate.status_code == 409
+    assert duplicate.json() == {
+        "detail": "An owner with this email already exists"
+    }
+
+
+def test_registration_rejects_invalid_email_password_and_extra_fields(
+    api_client: TestClient,
+) -> None:
+    valid_data = {
+        "email": "new@example.com",
+        "password": OWNER_PASSWORD,
+        "full_name": OWNER_FULL_NAME,
+        "phone_number": OWNER_PHONE_NUMBER,
+    }
+    invalid_payloads = [
+        {**valid_data, "email": "not-an-email"},
+        {**valid_data, "password": "too-short"},
+        {**valid_data, "password": "x" * 129},
+        {**valid_data, "full_name": "  "},
+        {**valid_data, "full_name": "x" * 256},
+        {**valid_data, "phone_number": "4155552671"},
+        {**valid_data, "phone_number": "+0123456789"},
+        {**valid_data, "phone_number": "+14155552671x"},
+        {key: value for key, value in valid_data.items() if key != "full_name"},
+        {key: value for key, value in valid_data.items() if key != "phone_number"},
+        {**valid_data, "owner_id": "other"},
+    ]
+
+    for payload in invalid_payloads:
+        assert api_client.post("/api/auth/register", json=payload).status_code == 422
 
 
 def test_login_uses_httponly_cookie_and_persists_only_token_hash(
@@ -56,6 +180,8 @@ def test_login_uses_httponly_cookie_and_persists_only_token_hash(
     assert response.status_code == 200
     assert response.json()["id"] == owner.id
     assert "password" not in response.json()
+    assert response.json()["full_name"] == OWNER_FULL_NAME
+    assert response.json()["phone_number"] == OWNER_PHONE_NUMBER
     cookie = response.cookies["clientpilot_session"]
     cookie_header = response.headers["set-cookie"].lower()
     assert "httponly" in cookie_header
@@ -151,8 +277,8 @@ def test_expired_session_is_rejected(
     assert response.status_code == 401
 
 
-def test_private_clients_require_login_and_public_signup_is_absent(
+def test_private_clients_require_login_but_registration_is_public(
     api_client: TestClient,
 ) -> None:
     assert api_client.get("/api/clients").status_code == 401
-    assert api_client.post("/api/auth/register").status_code == 404
+    assert api_client.get("/api/auth/me").status_code == 401

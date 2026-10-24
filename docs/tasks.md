@@ -6,8 +6,8 @@ This task list turns the staged implementation plan into actionable work items. 
 
 ## Milestone 0 — Requirements and design
 
-- [x] **T00.1 — Decide authentication and Owner provisioning**
-  Document the authentication mechanism, secure logout behavior, cookie/token handling, and controlled initial Owner provisioning. Public signup is excluded.
+- [x] **T00.1 — Decide registration and authentication**
+  Document Owner registration, authentication, secure logout behavior, and cookie/token handling.
 
 - [x] **T00.2 — Define API and error contract**
   Document initial API routes, methods, request/response shapes, error schema, status mapping, and how missing records are distinguished from inaccessible records.
@@ -21,8 +21,11 @@ This task list turns the staged implementation plan into actionable work items. 
 - [x] **T00.5 — Approve persistence setup**
   Document SQLite configuration and the database initialization/migration approach required for the MVP.
 
-- [x] **T00.6 — Update and review design documents**
+- [ ] **T00.6 — Update and review design documents**
   Record approved decisions in the relevant specification, architecture, security, or API documents. Confirm Milestone 1 acceptance criteria are testable and no required decision remains open.
+
+- [ ] **T00.7 — Define owner-scoped client duplicate rule**
+  Decide which client fields and normalization rules identify duplicates within one Owner's workspace and document the duplicate-attempt response. Do not infer a matching rule from the existing client fields.
 
 ## Milestone 1 — Application foundation, authentication, and clients
 
@@ -35,23 +38,26 @@ This task list turns the staged implementation plan into actionable work items. 
   Implement the approved SQLite setup and schema initialization/migration approach. Verify records persist after restart.
 
 - [x] **T01.3 — Implement Owner authentication**
-  Implement controlled Owner provisioning, secure password hashing, login, logout, and authenticated identity handling according to the approved design. Do not add public signup.
+  Implement secure password hashing, registration, login, logout, and authenticated identity handling according to the approved design.
 
-- [x] **T01.4 — Implement client API and ownership enforcement**
-  Implement authenticated client create, list, detail, and update operations. Derive ownership from the authenticated identity; do not trust request-body `owner_id`.
+- [ ] **T01.4 — Implement client API and ownership enforcement**
+  Implement authenticated client create, list, detail, and update operations. Derive ownership from the authenticated identity; do not trust request-body `owner_id`. Prevent duplicate clients within the Owner's workspace using the approved matching rule.
 
 - [ ] **T01.5 — Add client frontend flows**  
   Add login and client create/list/detail/update flows that use the backend API. Frontend visibility or validation must not be treated as a security control.
 
-- [x] **T01.6 — Test authentication and client operations**
-  Cover valid operations, invalid/blank names, missing records, unauthenticated requests, cross-owner access, system-managed fields, and persistence across restart. Confirm permanent deletion is unavailable.
+- [ ] **T01.6 — Test authentication and client operations**
+  Cover multiple registered Owners and unique emails, valid operations, invalid/blank names, duplicate-client behavior under the approved rule, missing records, unauthenticated requests, cross-owner access, system-managed fields, and persistence across restart. Confirm permanent deletion is unavailable.
 
 - [x] **T01.7 — Align backend modules with the layered architecture**
   Keep HTTP handling, application services, persistence repositories, authentication dependencies, security utilities, models, schemas, and database setup in their documented layers without changing API behavior.
 
+- [x] **T01.8 — Implement public Owner registration**
+  Add `POST /api/auth/register` with validated full name, email, password, and E.164 phone number; reject duplicate email, hash passwords with Argon2, return a safe response, migrate Owner profile fields without breaking existing accounts, and test login and ownership behavior.
+
 ## Milestone 2 — Projects
 
-**Depends on:** T01.6 and approved project status, transition, update, name-validation, due-date/time-zone, and API rules.
+**Depends on:** T01.6, T00.7, and approved project status, transition, update, name-validation, due-date/time-zone, and API rules.
 
 - [ ] **T02.1 — Finalize project decisions**  
   Document project status values and transitions, active-project definition, editable fields/update semantics, name validation, and due-date/time-zone behavior.
@@ -105,7 +111,7 @@ This task list turns the staged implementation plan into actionable work items. 
   Verify Owner login/logout and client, project, task, and dashboard flows across the frontend, API, and database.
 
 - [ ] **T05.2 — Verify security and persistence invariants**  
-  Confirm unauthenticated requests are rejected; cross-owner records are not exposed or modified; project/client and task/project relationships are enforced; records survive restart.
+  Confirm unauthenticated requests are rejected; every private API is owner-scoped; cross-owner records are not exposed or modified; project/client and task/project relationships are enforced; records survive restart.
 
 - [ ] **T05.3 — Review V1 scope and documentation**  
   Compare implementation with the V1 specification and completion checklist. Update setup/API documentation and record any incomplete items; ensure excluded features have not been added.
@@ -115,4 +121,4 @@ This task list turns the staged implementation plan into actionable work items. 
 
 ## V1 boundaries
 
-Do not add public signup, a business-client portal, a marketplace, chat, notifications, file uploads, approval/revision workflows, invoices, payments, AI features, teams, complex roles, microservices, queues, caching, or permanent-delete operations without an explicitly approved scope change.
+Public email/password Owner registration is approved for V1. Do not add a business-client portal, a marketplace, chat, notifications, file uploads, approval/revision workflows, invoices, payments, AI features, teams, complex roles, microservices, queues, caching, or permanent-delete operations without an explicitly approved scope change.
