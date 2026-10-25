@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { AuthApiError, getCurrentOwner, logoutOwner } from "@/features/auth/service";
 import type { Owner } from "@/features/auth/types";
 import { Button } from "@/components/ui/button";
+import { ClientManagement } from "@/components/clients/client-management";
 
 export function DashboardPage() {
   const router = useRouter();
@@ -139,31 +140,7 @@ export function DashboardPage() {
               <h1 className="mt-3 text-3xl font-semibold tracking-[-0.035em] text-[#182230] sm:text-4xl">
                 Welcome, {owner.full_name ?? owner.email}
               </h1>
-              <div className="mt-8 rounded-2xl border border-[#eaecf0] bg-white p-6 shadow-[0_8px_28px_rgba(16,24,40,0.04)] sm:p-8">
-                <div className="flex size-11 items-center justify-center rounded-xl bg-[#eef0ff] text-[#4355d9]">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    className="size-5"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M4 19V5m0 14h16M8 15v-4m4 4V7m4 8v-6"
-                      stroke="currentColor"
-                      strokeWidth="1.7"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-                <h2 className="mt-5 text-lg font-semibold text-[#182230]">
-                  Your workspace is ready
-                </h2>
-                <p className="mt-2 max-w-xl text-sm leading-6 text-[#667085]">
-                  You’re signed in as {owner.email}. Client and dashboard
-                  workflows will appear here as they become available.
-                </p>
-              </div>
+              <ClientManagement />
             </motion.div>
           ) : null}
         </AnimatePresence>

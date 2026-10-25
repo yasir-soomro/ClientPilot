@@ -1,0 +1,455 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
+import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/auth/form-field";
+import { Input } from "@/components/ui/input";
+import { ApiError } from "@/features/api/client";
+import {
+  clientFieldsFromForm,
+  validateClientForm,
+} from "@/features/clients/schema";
+import {
+  createClient,
+  getClient,
+  listClients,
+  updateClient,
+} from "@/features/clients/service";
+import type {
+  Client,
+  ClientFieldErrors,
+  ClientFormValues,
+} from "@/features/clients/types";
+
+function readFormValues(form: HTMLFormElement): ClientFormValues {
+  const formData = new FormData(form);
+  return {
+    name: String(formData.get("name") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    company: String(formData.get("company") ?? ""),
+  };
+}
+
+function formatDate(value: string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+export function ClientManagement() {
+  const router = useRouter();
+  const [clients, setClients] = useState<Client[]>([]);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [listError, setListError] = useState("");
+  const [detailsError, setDetailsError] = useState("");
+  const [createErrors, setCreateErrors] = useState<ClientFieldErrors>({});
+  const [updateErrors, setUpdateErrors] = useState<ClientFieldErrors>({});
+  const [createError, setCreateError] = useState("");
+  const [createSuccess, setCreateSuccess] = useState("");
+  const [updateError, setUpdateError] = useState("");
+  const [updateSuccess, setUpdateSuccess] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const detailRequest = useRef(0);
+
+  const handleApiError = useCallback(
+    (error: unknown): string => {
+      if (error instanceof ApiError && error.status === 401) {
+        router.replace("/login");
+        router.refresh();
+        return "Your session has expired. Redirecting to sign in.";
+      }
+      return error instanceof Error
+        ? error.message
+        : "Unable to complete the request. Please try again.";
+    },
+    [router],
+  );
+
+  const refreshClients = useCallback(async () => {
+    setLoading(true);
+    setListError("");
+    try {
+      setClients(await listClients());
+    } catch (error) {
+      setListError(handleApiError(error));
+    } finally {
+      setLoading(false);
+    }
+  }, [handleApiError]);
+
+  useEffect(() => {
+    let active = true;
+    listClients()
+      .then((result) => {
+        if (active) {
+          setClients(result);
+          setListError("");
+        }
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setListError(handleApiError(error));
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+      detailRequest.current += 1;
+    };
+  }, [handleApiError]);
+
+  async function selectClient(clientId: string) {
+    const requestId = ++detailRequest.current;
+    setSelectedId(clientId);
+    setSelectedClient(null);
+    setDetailsError("");
+    setDetailsLoading(true);
+    setUpdateError("");
+    setUpdateSuccess("");
+    try {
+      const client = await getClient(clientId);
+      if (requestId === detailRequest.current) {
+        setSelectedClient(client);
+      }
+    } catch (error) {
+      if (requestId === detailRequest.current) {
+        setDetailsError(handleApiError(error));
+      }
+    } finally {
+      if (requestId === detailRequest.current) {
+        setDetailsLoading(false);
+      }
+    }
+  }
+
+  async function handleCreate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const values = readFormValues(form);
+    const validationErrors = validateClientForm(values);
+    setCreateErrors(validationErrors);
+    setCreateError("");
+    setCreateSuccess("");
+    if (Object.keys(validationErrors).length > 0) {
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const client = await createClient(clientFieldsFromForm(values));
+      form.reset();
+      setCreateErrors({});
+      setCreateSuccess(`${client.name} was added.`);
+      await refreshClients();
+      await selectClient(client.id);
+    } catch (error) {
+      setCreateError(handleApiError(error));
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleUpdate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedClient) {
+      return;
+    }
+    const values = readFormValues(event.currentTarget);
+    const validationErrors = validateClientForm(values);
+    setUpdateErrors(validationErrors);
+    setUpdateError("");
+    setUpdateSuccess("");
+    if (Object.keys(validationErrors).length > 0) {
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      const client = await updateClient(
+        selectedClient.id,
+        clientFieldsFromForm(values),
+      );
+      setSelectedClient(client);
+      setUpdateErrors({});
+      setUpdateSuccess("Client details were saved.");
+      await refreshClients();
+    } catch (error) {
+      setUpdateError(handleApiError(error));
+    } finally {
+      setUpdating(false);
+    }
+  }
+
+  return (
+    <section aria-labelledby="clients-heading" className="mt-12">
+      <div className="mb-6">
+        <p className="text-sm font-semibold text-[#4355d9]">Workspace</p>
+        <h2
+          id="clients-heading"
+          className="mt-2 text-2xl font-semibold tracking-[-0.025em] text-[#182230]"
+        >
+          Clients
+        </h2>
+        <p className="mt-1 text-sm leading-6 text-[#667085]">
+          Keep your client contact details organized in one place.
+        </p>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <section className="rounded-2xl border border-[#eaecf0] bg-white p-6 shadow-[0_8px_28px_rgba(16,24,40,0.04)]">
+          <h3 className="text-lg font-semibold text-[#182230]">Add a client</h3>
+          <form className="mt-5 space-y-4" onSubmit={handleCreate} noValidate>
+            {createError ? (
+              <p role="alert" className="text-sm leading-5 text-[#b42318]">
+                {createError}
+              </p>
+            ) : null}
+            {createSuccess ? (
+              <p role="status" className="text-sm leading-5 text-[#067647]">
+                {createSuccess}
+              </p>
+            ) : null}
+            <FormField
+              id="new-client-name"
+              label="Name"
+              error={createErrors.name}
+            >
+              <Input
+                id="new-client-name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                placeholder="Client name"
+                aria-invalid={Boolean(createErrors.name)}
+                aria-describedby={
+                  createErrors.name ? "new-client-name-error" : undefined
+                }
+              />
+            </FormField>
+            <FormField
+              id="new-client-email"
+              label="Email (optional)"
+              error={createErrors.email}
+            >
+              <Input
+                id="new-client-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                placeholder="client@example.com"
+                aria-invalid={Boolean(createErrors.email)}
+                aria-describedby={
+                  createErrors.email ? "new-client-email-error" : undefined
+                }
+              />
+            </FormField>
+            <FormField
+              id="new-client-company"
+              label="Company (optional)"
+              error={createErrors.company}
+              hint="Up to 255 characters."
+            >
+              <Input
+                id="new-client-company"
+                name="company"
+                type="text"
+                autoComplete="organization"
+                placeholder="Company name"
+                aria-invalid={Boolean(createErrors.company)}
+                aria-describedby={
+                  createErrors.company
+                    ? "new-client-company-error"
+                    : "new-client-company-hint"
+                }
+              />
+            </FormField>
+            <Button loading={creating}>Add client</Button>
+          </form>
+        </section>
+
+        <section className="rounded-2xl border border-[#eaecf0] bg-white p-6 shadow-[0_8px_28px_rgba(16,24,40,0.04)]">
+          <div className="flex items-center justify-between gap-4">
+            <h3 className="text-lg font-semibold text-[#182230]">
+              Your clients
+            </h3>
+            <span className="text-sm text-[#667085]">
+              {clients.length} {clients.length === 1 ? "client" : "clients"}
+            </span>
+          </div>
+          {loading ? (
+            <p role="status" className="mt-5 text-sm text-[#667085]">
+              Loading clients…
+            </p>
+          ) : listError ? (
+            <div className="mt-5" role="alert">
+              <p className="text-sm leading-5 text-[#b42318]">{listError}</p>
+              <button
+                type="button"
+                onClick={() => void refreshClients()}
+                className="mt-3 text-sm font-semibold text-[#4355d9] hover:underline"
+              >
+                Try again
+              </button>
+            </div>
+          ) : clients.length === 0 ? (
+            <p className="mt-5 rounded-xl bg-[#f7f8fc] p-4 text-sm leading-6 text-[#667085]">
+              No clients yet. Add your first client using the form.
+            </p>
+          ) : (
+            <ul className="mt-4 divide-y divide-[#eaecf0]">
+              {clients.map((client) => (
+                <li key={client.id}>
+                  <button
+                    type="button"
+                    onClick={() => void selectClient(client.id)}
+                    aria-current={selectedId === client.id ? "true" : undefined}
+                    className={`w-full rounded-lg px-3 py-3 text-left transition hover:bg-[#f7f8fc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5969e8] ${
+                      selectedId === client.id ? "bg-[#f2f4ff]" : ""
+                    }`}
+                  >
+                    <span className="block font-medium text-[#182230]">
+                      {client.name}
+                    </span>
+                    <span className="mt-1 block text-sm text-[#667085]">
+                      {client.company ?? client.email ?? "No contact details"}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      {selectedId ? (
+        <section
+          aria-labelledby="client-details-heading"
+          className="mt-6 rounded-2xl border border-[#eaecf0] bg-white p-6 shadow-[0_8px_28px_rgba(16,24,40,0.04)]"
+        >
+          <h3
+            id="client-details-heading"
+            className="text-lg font-semibold text-[#182230]"
+          >
+            Client details
+          </h3>
+          {detailsLoading ? (
+            <p role="status" className="mt-4 text-sm text-[#667085]">
+              Loading client details…
+            </p>
+          ) : detailsError ? (
+            <p role="alert" className="mt-4 text-sm text-[#b42318]">
+              {detailsError}
+            </p>
+          ) : selectedClient ? (
+            <div className="mt-5 grid gap-8 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)]">
+              <dl className="space-y-4 text-sm">
+                <div>
+                  <dt className="font-medium text-[#667085]">Created</dt>
+                  <dd className="mt-1 text-[#182230]">
+                    {formatDate(selectedClient.created_at)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-[#667085]">Last updated</dt>
+                  <dd className="mt-1 text-[#182230]">
+                    {formatDate(selectedClient.updated_at)}
+                  </dd>
+                </div>
+              </dl>
+
+              <form
+                key={`${selectedClient.id}-${selectedClient.updated_at}`}
+                className="space-y-4"
+                onSubmit={handleUpdate}
+                noValidate
+              >
+                <h4 className="font-semibold text-[#182230]">Update client</h4>
+                {updateError ? (
+                  <p role="alert" className="text-sm leading-5 text-[#b42318]">
+                    {updateError}
+                  </p>
+                ) : null}
+                {updateSuccess ? (
+                  <p role="status" className="text-sm leading-5 text-[#067647]">
+                    {updateSuccess}
+                  </p>
+                ) : null}
+                <FormField
+                  id="edit-client-name"
+                  label="Name"
+                  error={updateErrors.name}
+                >
+                  <Input
+                    id="edit-client-name"
+                    name="name"
+                    type="text"
+                    defaultValue={selectedClient.name}
+                    aria-invalid={Boolean(updateErrors.name)}
+                    aria-describedby={
+                      updateErrors.name ? "edit-client-name-error" : undefined
+                    }
+                  />
+                </FormField>
+                <FormField
+                  id="edit-client-email"
+                  label="Email"
+                  error={updateErrors.email}
+                  hint="Leave blank to clear the email."
+                >
+                  <Input
+                    id="edit-client-email"
+                    name="email"
+                    type="email"
+                    defaultValue={selectedClient.email ?? ""}
+                    aria-invalid={Boolean(updateErrors.email)}
+                    aria-describedby={
+                      updateErrors.email
+                        ? "edit-client-email-error"
+                        : "edit-client-email-hint"
+                    }
+                  />
+                </FormField>
+                <FormField
+                  id="edit-client-company"
+                  label="Company"
+                  error={updateErrors.company}
+                  hint="Leave blank to clear the company."
+                >
+                  <Input
+                    id="edit-client-company"
+                    name="company"
+                    type="text"
+                    defaultValue={selectedClient.company ?? ""}
+                    aria-invalid={Boolean(updateErrors.company)}
+                    aria-describedby={
+                      updateErrors.company
+                        ? "edit-client-company-error"
+                        : "edit-client-company-hint"
+                    }
+                  />
+                </FormField>
+                <Button loading={updating}>Save changes</Button>
+              </form>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+    </section>
+  );
+}

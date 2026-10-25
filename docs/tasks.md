@@ -43,7 +43,7 @@ This task list turns the staged implementation plan into actionable work items. 
 - [ ] **T01.4 — Implement client API and ownership enforcement**
   Implement authenticated client create, list, detail, and update operations. Derive ownership from the authenticated identity; do not trust request-body `owner_id`. Prevent duplicate clients within the Owner's workspace using the approved matching rule.
 
-- [ ] **T01.5 — Add client frontend flows**  
+- [x] **T01.5 — Add client frontend flows**
   Add client create/list/detail/update flows that use the backend API. Authentication pages are tracked in T01.9. Frontend visibility or validation must not be treated as a security control.
 
 - [ ] **T01.6 — Test authentication and client operations**

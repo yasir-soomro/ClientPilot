@@ -156,6 +156,16 @@ def test_client_records_persist_across_database_sessions(
     owner = create_owner(db_session, "owner@example.com")
     login(api_client, owner.email)
     created = api_client.post("/api/clients", json={"name": "Persistent"}).json()
+    updated = api_client.patch(
+        f"/api/clients/{created['id']}",
+        json={
+            "name": "Updated after persistence",
+            "email": "updated@example.com",
+            "company": "Persistent Company",
+        },
+    )
+    assert updated.status_code == 200
+    assert api_client.get("/api/clients").json() == [updated.json()]
 
     db_session.commit()
     test_engine.dispose()
@@ -169,7 +179,9 @@ def test_client_records_persist_across_database_sessions(
             )
 
         assert persisted is not None
-        assert persisted.name == "Persistent"
+        assert persisted.name == "Updated after persistence"
+        assert persisted.email == "updated@example.com"
+        assert persisted.company == "Persistent Company"
     finally:
         reopened_engine.dispose()
 
