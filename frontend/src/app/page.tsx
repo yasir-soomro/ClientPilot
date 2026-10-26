@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -111,41 +112,16 @@ export default function Home() {
             </p>
           </div>
 
-          <div
-            aria-label="Sample workspace preview"
-            className="relative mx-auto w-full max-w-[540px] rounded-[26px] border border-[#e3e5ed] bg-white/70 p-3 shadow-[0_30px_90px_rgba(25,30,60,0.12)] backdrop-blur sm:p-4"
-          >
-            <div className="overflow-hidden rounded-[19px] border border-[#eceef3] bg-white">
-              <div className="flex items-center justify-between border-b border-[#eceef3] px-5 py-4 sm:px-6">
-                <div className="flex items-center gap-3">
-                  <BrandMark />
-                  <div>
-                    <p className="text-xs font-semibold text-[#344054]">My workspace</p>
-                    <p className="mt-0.5 text-[11px] text-[#98a2b3]">A clear view of your work</p>
-                  </div>
-                </div>
-                <span className="rounded-full bg-[#f3f4f8] px-2.5 py-1 text-[10px] font-semibold text-[#667085]">Sample</span>
-              </div>
-              <div className="grid grid-cols-2 gap-3 p-4 sm:p-5">
-                <PreviewMetric title="Clients" value="All in one place" icon={Users} />
-                <PreviewMetric title="Projects" value="Know what’s moving" icon={BriefcaseBusiness} />
-              </div>
-              <div className="mx-4 mb-4 rounded-xl border border-[#eceef3] p-4 sm:mx-5 sm:mb-5">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold text-[#344054]">Project progress</p>
-                    <p className="mt-1 text-[11px] text-[#98a2b3]">Tasks keep delivery on track</p>
-                  </div>
-                  <span className="text-sm font-bold text-indigo-700">68%</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-[#eef0f5]">
-                  <div className="h-full w-[68%] rounded-full bg-indigo-600" />
-                </div>
-                <div className="mt-4 flex items-center justify-between border-t border-[#f0f1f5] pt-3 text-[11px] text-[#667085]">
-                  <span>Website refresh</span><span>Next: Review layout</span>
-                </div>
-              </div>
-            </div>
+          <div className="relative mx-auto w-full max-w-[540px] rounded-[26px] border border-[#e3e5ed] bg-white/70 p-2.5 shadow-[0_30px_90px_rgba(25,30,60,0.12)] backdrop-blur sm:p-3">
+            <Image
+              src="/ClientPilot.png"
+              alt="ClientPilot workspace dashboard for organizing client projects and tasks."
+              width={1536}
+              height={1024}
+              sizes="(max-width: 639px) calc(100vw - 40px), (max-width: 1023px) calc(100vw - 64px), 540px"
+              preload
+              className="h-auto w-full rounded-[19px]"
+            />
           </div>
         </div>
       </section>
@@ -182,17 +158,5 @@ export default function Home() {
         </div>
       </footer>
     </main>
-  );
-}
-
-function PreviewMetric({ title, value, icon: Icon }: { title: string; value: string; icon: typeof Users }) {
-  return (
-    <div className="rounded-xl border border-[#eceef3] p-3.5 sm:p-4">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-[#667085]">{title}</span>
-        <Icon aria-hidden="true" size={16} className="text-indigo-600" />
-      </div>
-      <p className="mt-4 text-xs font-bold text-[#344054] sm:text-sm">{value}</p>
-    </div>
   );
 }
