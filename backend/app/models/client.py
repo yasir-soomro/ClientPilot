@@ -8,7 +8,9 @@ from app.db.base import Base
 from app.models.timestamps import TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.project import Project
     from app.models.user import User
+
 
 class Client(TimestampMixin, Base):
     __tablename__ = "clients"
@@ -25,3 +27,7 @@ class Client(TimestampMixin, Base):
     company: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     owner: Mapped["User"] = relationship(back_populates="clients")
+    projects: Mapped[list["Project"]] = relationship(
+        back_populates="client",
+        cascade="all, delete-orphan",
+    )

@@ -9,6 +9,7 @@ import {
   type FormEvent,
 } from "react";
 import { Button } from "@/components/ui/button";
+import { ClientProjectList } from "@/components/clients/client-project-list";
 import { FormField } from "@/components/auth/form-field";
 import { Input } from "@/components/ui/input";
 import { ApiError } from "@/features/api/client";
@@ -44,13 +45,23 @@ function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
-export function ClientManagement() {
+export function ClientManagement({
+  onClientsChanged,
+  initialSelectedClientId,
+}: {
+  onClientsChanged?: () => void;
+  initialSelectedClientId?: string;
+}) {
   const router = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    initialSelectedClientId ?? null,
+  );
   const [loading, setLoading] = useState(true);
-  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(
+    Boolean(initialSelectedClientId),
+  );
   const [listError, setListError] = useState("");
   const [detailsError, setDetailsError] = useState("");
   const [createErrors, setCreateErrors] = useState<ClientFieldErrors>({});
@@ -89,6 +100,30 @@ export function ClientManagement() {
     }
   }, [handleApiError]);
 
+  const selectClient = useCallback(async (clientId: string) => {
+    const requestId = ++detailRequest.current;
+    setSelectedId(clientId);
+    setSelectedClient(null);
+    setDetailsError("");
+    setDetailsLoading(true);
+    setUpdateError("");
+    setUpdateSuccess("");
+    try {
+      const client = await getClient(clientId);
+      if (requestId === detailRequest.current) {
+        setSelectedClient(client);
+      }
+    } catch (error) {
+      if (requestId === detailRequest.current) {
+        setDetailsError(handleApiError(error));
+      }
+    } finally {
+      if (requestId === detailRequest.current) {
+        setDetailsLoading(false);
+      }
+    }
+  }, [handleApiError]);
+
   useEffect(() => {
     let active = true;
     listClients()
@@ -114,29 +149,33 @@ export function ClientManagement() {
     };
   }, [handleApiError]);
 
-  async function selectClient(clientId: string) {
-    const requestId = ++detailRequest.current;
-    setSelectedId(clientId);
-    setSelectedClient(null);
-    setDetailsError("");
-    setDetailsLoading(true);
-    setUpdateError("");
-    setUpdateSuccess("");
-    try {
-      const client = await getClient(clientId);
-      if (requestId === detailRequest.current) {
-        setSelectedClient(client);
-      }
-    } catch (error) {
-      if (requestId === detailRequest.current) {
-        setDetailsError(handleApiError(error));
-      }
-    } finally {
-      if (requestId === detailRequest.current) {
-        setDetailsLoading(false);
-      }
+  useEffect(() => {
+    if (!initialSelectedClientId) {
+      return;
     }
-  }
+    let active = true;
+    const requestId = ++detailRequest.current;
+    getClient(initialSelectedClientId)
+      .then((client) => {
+        if (active && requestId === detailRequest.current) {
+          setSelectedClient(client);
+        }
+      })
+      .catch((error: unknown) => {
+        if (active && requestId === detailRequest.current) {
+          setDetailsError(handleApiError(error));
+        }
+      })
+      .finally(() => {
+        if (active && requestId === detailRequest.current) {
+          setDetailsLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+      detailRequest.current += 1;
+    };
+  }, [handleApiError, initialSelectedClientId]);
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -153,6 +192,7 @@ export function ClientManagement() {
     setCreating(true);
     try {
       const client = await createClient(clientFieldsFromForm(values));
+      onClientsChanged?.();
       form.reset();
       setCreateErrors({});
       setCreateSuccess(`${client.name} was added.`);
@@ -185,6 +225,7 @@ export function ClientManagement() {
         selectedClient.id,
         clientFieldsFromForm(values),
       );
+      onClientsChanged?.();
       setSelectedClient(client);
       setUpdateErrors({});
       setUpdateSuccess("Client details were saved.");
@@ -317,7 +358,7 @@ export function ClientManagement() {
                 <li key={client.id}>
                   <button
                     type="button"
-                    onClick={() => void selectClient(client.id)}
+                    onClick={() => router.push(`/clients/${client.id}`)}
                     aria-current={selectedId === client.id ? "true" : undefined}
                     className={`w-full rounded-lg px-3 py-3 text-left transition hover:bg-[#f7f8fc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5969e8] ${
                       selectedId === client.id ? "bg-[#f2f4ff]" : ""
@@ -449,6 +490,9 @@ export function ClientManagement() {
             </div>
           ) : null}
         </section>
+      ) : null}
+      {selectedClient ? (
+        <ClientProjectList clientId={selectedClient.id} />
       ) : null}
     </section>
   );

@@ -96,6 +96,92 @@ def test_client_create_validation_rejects_blank_missing_and_invalid_fields(
     ] == [422, 422, 422, 422]
 
 
+def test_duplicate_client_create_matches_normalized_email_and_name_company(
+    api_client: TestClient, db_session: Session
+) -> None:
+    owner = create_owner(db_session, "owner@example.com")
+    login(api_client, owner.email)
+    first = api_client.post(
+        "/api/clients",
+        json={
+            "name": "Ali Khan",
+            "email": "ALI@example.com",
+            "company": "Ali Clothing",
+        },
+    )
+    assert first.status_code == 201
+
+    duplicate_email = api_client.post(
+        "/api/clients",
+        json={
+            "name": "Different Name",
+            "email": "  ali@EXAMPLE.com ",
+            "company": "Different Company",
+        },
+    )
+    duplicate_name_company = api_client.post(
+        "/api/clients",
+        json={
+            "name": "  ALI KHAN ",
+            "email": "different@example.com",
+            "company": " ali clothing ",
+        },
+    )
+    expected = {
+        "detail": "A client with these details already exists"
+    }
+
+    assert duplicate_email.status_code == duplicate_name_company.status_code == 409
+    assert duplicate_email.json() == duplicate_name_company.json() == expected
+    assert len(api_client.get("/api/clients").json()) == 1
+
+
+def test_duplicate_client_create_ignores_null_optional_values(
+    api_client: TestClient, db_session: Session
+) -> None:
+    owner = create_owner(db_session, "owner@example.com")
+    login(api_client, owner.email)
+    first = api_client.post(
+        "/api/clients",
+        json={"name": "Same Name", "email": None, "company": None},
+    )
+    second = api_client.post(
+        "/api/clients",
+        json={"name": "Same Name", "email": None, "company": None},
+    )
+    assert first.status_code == second.status_code == 201
+
+
+def test_duplicate_client_create_is_scoped_to_authenticated_owner(
+    api_client: TestClient, db_session: Session
+) -> None:
+    first_owner = create_owner(db_session, "first@example.com")
+    second_owner = create_owner(db_session, "second@example.com")
+    login(api_client, first_owner.email)
+    original = api_client.post(
+        "/api/clients",
+        json={
+            "name": "Owner One",
+            "email": "shared@example.com",
+            "company": "Shared Company",
+        },
+    )
+    assert original.status_code == 201
+
+    login(api_client, second_owner.email)
+    same_values_for_other_owner = api_client.post(
+        "/api/clients",
+        json={
+            "name": "Owner One",
+            "email": "shared@example.com",
+            "company": "Shared Company",
+        },
+    )
+
+    assert same_values_for_other_owner.status_code == 201
+    assert len(api_client.get("/api/clients").json()) == 1
+
+
 def test_client_update_rejects_empty_system_and_invalid_updates(
     api_client: TestClient, db_session: Session
 ) -> None:
@@ -120,6 +206,72 @@ def test_client_update_rejects_empty_system_and_invalid_updates(
 
     unchanged = api_client.get(client_url).json()
     assert unchanged["name"] == "Client"
+
+
+def test_client_update_excludes_itself_from_duplicate_matching(
+    api_client: TestClient, db_session: Session
+) -> None:
+    owner = create_owner(db_session, "owner@example.com")
+    login(api_client, owner.email)
+    created = api_client.post(
+        "/api/clients",
+        json={
+            "name": "Ali Khan",
+            "email": "ali@example.com",
+            "company": "Ali Clothing",
+        },
+    )
+    client_id = created.json()["id"]
+
+    unchanged_duplicate_fields = api_client.patch(
+        f"/api/clients/{client_id}", json={"name": "  ALI KHAN "}
+    )
+    same_email_and_company = api_client.patch(
+        f"/api/clients/{client_id}", json={"company": " ali clothing "}
+    )
+
+    assert unchanged_duplicate_fields.status_code == same_email_and_company.status_code == 200
+    assert same_email_and_company.json()["email"] == "ali@example.com"
+
+
+def test_client_update_conflicts_return_409_without_mutating_record(
+    api_client: TestClient, db_session: Session
+) -> None:
+    owner = create_owner(db_session, "owner@example.com")
+    login(api_client, owner.email)
+    original = api_client.post(
+        "/api/clients",
+        json={
+            "name": "Ali Khan",
+            "email": "ali@example.com",
+            "company": "Ali Clothing",
+        },
+    ).json()
+    other = api_client.post(
+        "/api/clients",
+        json={
+            "name": "Sara Noor",
+            "email": "sara@example.com",
+            "company": "Sara Design",
+        },
+    ).json()
+
+    duplicate_email = api_client.patch(
+        f"/api/clients/{other['id']}", json={"email": " ALI@EXAMPLE.COM "}
+    )
+    duplicate_name_company = api_client.patch(
+        f"/api/clients/{other['id']}",
+        json={"name": " ali khan ", "company": " ALI CLOTHING "},
+    )
+    unchanged = api_client.get(f"/api/clients/{other['id']}")
+
+    assert duplicate_email.status_code == duplicate_name_company.status_code == 409
+    assert duplicate_email.json() == {
+        "detail": "A client with these details already exists"
+    }
+    assert duplicate_name_company.json() == duplicate_email.json()
+    assert unchanged.json() == other
+    assert api_client.get(f"/api/clients/{original['id']}").json() == original
 
 
 def test_missing_and_foreign_clients_are_indistinguishable_and_unmodified(

@@ -25,13 +25,13 @@ Before implementing authentication or private data operations, document and appr
 | Decision | Status |
 |---|---|
 | Owner email/password registration, authentication, secure logout behavior, and cookie handling | Decided for Owner/client slice; see [specification](./specification.md#16-owner-and-client-decisions) |
-| Preventing duplicate clients within one Owner's workspace | Required; matching fields, normalization, and duplicate-attempt response remain open in [specification](./specification.md#17-decisions-still-open) |
+| Preventing duplicate clients within one Owner's workspace | Decided: non-null normalized email match OR normalized name-and-non-null-company match; owner-scoped; duplicate writes return `409`; see [specification](./specification.md#16-owner-and-client-decisions) |
 | Client email/company optionality, validation, UUID identifiers, UTC timestamps, and allowed update fields | Decided for client slice; see [specification](./specification.md#16-owner-and-client-decisions) |
 | Initial API routes, request/response formats, validation errors, and status mapping | Decided for Owner/client slice; see [specification](./specification.md#16-owner-and-client-decisions) |
 | Missing versus inaccessible client records | Same `404` response; see [specification](./specification.md#16-owner-and-client-decisions) |
 | Client-list pagination, sorting, and filtering | Deferred; clients are unpaginated and newest-first |
-| Project status values, definition of active, and allowed transitions | Project and dashboard implementation |
-| Project update fields/semantics and due-date format/time-zone behavior | Project implementation |
+| Project statuses, default, active definition, transitions, update fields, name validation, date-only due dates, list behavior, and API errors | Decided for Projects in specification section 8.3 |
+| Project-list pagination, sorting, and filtering | Deferred; projects are unpaginated and newest-first |
 | Task due-date support, editable fields, and allowed status transitions | Task implementation |
 | Deadline window, time-zone handling, and overdue grouping/display | Dashboard implementation |
 | SQLite setup and Alembic migration approach; backup/deployment details when required by the delivery environment | SQLite/Alembic setup implemented; backup/deployment deferred |
@@ -45,7 +45,7 @@ The implementation plan does not prescribe behavior for the remaining project, t
 
 **Goal:** Make the first implementation slice sufficiently specified.
 
-**Status:** Baseline is documented; the newly required owner-scoped client duplicate rule remains open and must be decided before client-slice acceptance. Decisions for later project, task, and dashboard milestones also remain open.
+**Status:** Owner/client requirements are documented. The approved client duplicate rule is enforced by the backend and covered by API tests. Decisions for later project, task, and dashboard milestones remain open.
 
 **Completed work:**
 
@@ -54,6 +54,7 @@ The implementation plan does not prescribe behavior for the remaining project, t
 - Extended registration to require validated full name and E.164 phone number, persisted as Owner profile fields with a backward-compatible migration for legacy accounts.
 - Defined the initial API error contract and missing-versus-inaccessible client policy.
 - Finalized client fields, validation, update semantics, identifiers, and timestamp behavior.
+- Decided owner-scoped client duplicate matching, normalization, null handling, and the duplicate conflict response.
 - Deferred pagination/filtering for the initial client-list endpoint.
 - Recorded the SQLite and Alembic migration approach.
 - Updated the specification and architecture to reflect these decisions.
@@ -81,7 +82,7 @@ The implementation plan does not prescribe behavior for the remaining project, t
 - Implement public email/password Owner registration and login/logout using the approved security design.
 - Implement client create, list, detail, and update operations.
 - Enforce authentication and current-Owner scoping in the backend.
-- Prevent duplicate clients within each Owner's workspace using the matching rule approved in the specification.
+- Prevent duplicate clients within each Owner's workspace using the matching rule approved in the specification, on both create and update.
 - Add client UI flows that use the backend API; do not rely on frontend checks for security.
 
 **Acceptance criteria:**
@@ -94,7 +95,7 @@ The implementation plan does not prescribe behavior for the remaining project, t
 - An Owner can create, list, view, and update their own clients.
 - Missing or blank client names are rejected; other fields follow the approved validation rules.
 - Client list results are restricted to the authenticated Owner.
-- Duplicate client records are prevented within an Owner's workspace according to the matching rule approved before implementation; another Owner's records do not participate in that check.
+- Duplicate client records are prevented on create and update within an Owner's workspace according to the matching rule in the specification; another Owner's records do not participate in that check.
 - Another Owner's client cannot be viewed or changed by guessing its identifier.
 - Ordinary requests cannot overwrite system-managed ownership, identifiers, or timestamps.
 - Successful client changes persist across application restarts.
@@ -106,7 +107,8 @@ The implementation plan does not prescribe behavior for the remaining project, t
 - Registration validation, duplicate-email rejection, hashed password persistence, safe response shape, and successful login after registration.
 - Required name/phone validation, E.164 phone format, profile-field persistence, and legacy-user migration compatibility.
 - Valid client create/list/detail/update flows and invalid or blank required name.
-- Duplicate client attempts within one Owner's workspace, using the approved matching criteria; identical client data in separate Owners' workspaces remains isolated.
+- Duplicate create and update attempts within one Owner's workspace, including normalized email, normalized name/company, optional null values, self-exclusion on update, and no mutation on conflict; identical client data in separate Owners' workspaces remains isolated.
+- Duplicate response contract: HTTP `409` with `{"detail":"A client with these details already exists"}`.
 - Missing record and cross-owner read/update attempts.
 - Rejection/protection of system-managed fields.
 - Persistence across application restart.
@@ -114,32 +116,41 @@ The implementation plan does not prescribe behavior for the remaining project, t
 
 ### Milestone 2 — Projects
 
-**Prerequisite:** Project status and active definition, allowed transitions, update semantics, name validation, due-date/time-zone rules, and API behavior are documented.
+**Prerequisite:** Project decisions are recorded in specification section 8.3. T02.1 is complete.
 
 **Goal:** Manage projects linked only to the current Owner's clients.
 
 **Work:**
 
 - Implement project create, list, detail, and update operations and corresponding frontend flows.
-- Validate the required project name and approved optional fields.
+- Validate required client/name fields, the approved status set/default, and optional date-only due date.
 - Enforce that a project can only reference a client owned by the authenticated Owner.
-- Apply the approved project status and transition rules.
+- Apply the approved transition rules; any listed status may transition to any other listed status.
+- Follow the documented owner-scoped list order, response shapes, and API error/status contract.
 
 **Acceptance criteria:**
 
 - An authenticated Owner can create, list, view, and update accessible projects.
-- Projects require a valid name according to the approved validation contract.
+- Project names are trimmed, nonblank, and at most 255 characters.
+- New projects default to `planned`; only `planned`, `in_progress`, and `completed` are accepted, and status changes may move between any of them.
+- Optional due dates use ISO `YYYY-MM-DD` calendar dates and can be cleared with `null`.
+- PATCH changes only supplied, documented fields; empty patches and unknown/system-managed fields are rejected.
 - A project cannot be created or moved to another Owner's client.
 - Lists and detail/update operations are owner-scoped.
+- Project lists are unpaginated and newest-first with an ID tie-breaker.
+- Missing/foreign projects and missing/foreign linked clients follow the same 404 contracts recorded in the specification.
+- Authenticated frontend create/list/detail/update flows use the shared API client, display loading/empty/success/validation/API-error states, and redirect expired sessions to sign-in.
 - Project changes persist across application restarts.
 - No permanent project-delete operation is exposed.
 
 **Tests:**
 
-- Valid create/list/detail/update and invalid project fields.
+- Valid create/list/detail/update, default status, and invalid project fields.
 - Missing project and cross-owner project access.
 - Project creation/relinking against an inaccessible client.
-- Status validation and transitions.
+- Status validation and every permitted transition, including reopening a completed project.
+- Name trimming, blank/overlong name rejection, date-only due-date validation, and due-date clearing.
+- PATCH partial updates, empty-patch rejection, system-managed/unknown field rejection, and list ordering.
 - Persistence across restart.
 
 ### Milestone 3 — Tasks
@@ -174,7 +185,7 @@ The implementation plan does not prescribe behavior for the remaining project, t
 
 ### Milestone 4 — Dashboard and deadlines
 
-**Prerequisite:** Project status and active definition, deadline window, date/time-zone handling, and overdue display behavior are documented.
+**Prerequisite:** Project status and active-project definition are documented in specification section 8.3. Dashboard deadline window, date/time-zone handling, and overdue display behavior must be decided before implementing dashboard deadline behavior.
 
 **Goal:** Show persisted, current-Owner dashboard counts, task-based progress, and agreed deadline information.
 

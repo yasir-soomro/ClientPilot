@@ -21,11 +21,11 @@ This task list turns the staged implementation plan into actionable work items. 
 - [x] **T00.5 — Approve persistence setup**
   Document SQLite configuration and the database initialization/migration approach required for the MVP.
 
-- [ ] **T00.6 — Update and review design documents**
+- [x] **T00.6 — Update and review design documents**
   Record approved decisions in the relevant specification, architecture, security, or API documents. Confirm Milestone 1 acceptance criteria are testable and no required decision remains open.
 
-- [ ] **T00.7 — Define owner-scoped client duplicate rule**
-  Decide which client fields and normalization rules identify duplicates within one Owner's workspace and document the duplicate-attempt response. Do not infer a matching rule from the existing client fields.
+- [x] **T00.7 — Define owner-scoped client duplicate rule**
+  Decided and documented in specification section 16: duplicate on non-null normalized email match OR normalized name-and-non-null-company match; trim and compare name/company case-insensitively; null optional values do not match; scope checks to the authenticated Owner; return HTTP 409 with the documented detail for duplicate create/update attempts. Handling pre-existing duplicates and concurrent writes remains recorded as implementation considerations.
 
 ## Milestone 1 — Application foundation, authentication, and clients
 
@@ -40,13 +40,13 @@ This task list turns the staged implementation plan into actionable work items. 
 - [x] **T01.3 — Implement Owner authentication**
   Implement secure password hashing, registration, login, logout, and authenticated identity handling according to the approved design.
 
-- [ ] **T01.4 — Implement client API and ownership enforcement**
+- [x] **T01.4 — Implement client API and ownership enforcement**
   Implement authenticated client create, list, detail, and update operations. Derive ownership from the authenticated identity; do not trust request-body `owner_id`. Prevent duplicate clients within the Owner's workspace using the approved matching rule.
 
 - [x] **T01.5 — Add client frontend flows**
   Add client create/list/detail/update flows that use the backend API. Authentication pages are tracked in T01.9. Frontend visibility or validation must not be treated as a security control.
 
-- [ ] **T01.6 — Test authentication and client operations**
+- [x] **T01.6 — Test authentication and client operations**
   Cover multiple registered Owners and unique emails, valid operations, invalid/blank names, duplicate-client behavior under the approved rule, missing records, unauthenticated requests, cross-owner access, system-managed fields, and persistence across restart. Confirm permanent deletion is unavailable.
 
 - [x] **T01.7 — Align backend modules with the layered architecture**
@@ -60,18 +60,18 @@ This task list turns the staged implementation plan into actionable work items. 
 
 ## Milestone 2 — Projects
 
-**Depends on:** T01.6, T00.7, and approved project status, transition, update, name-validation, due-date/time-zone, and API rules.
+**Depends on:** T01.6 and the approved Project contract documented by T02.1.
 
-- [ ] **T02.1 — Finalize project decisions**  
-  Document project status values and transitions, active-project definition, editable fields/update semantics, name validation, and due-date/time-zone behavior.
+- [x] **T02.1 — Finalize project decisions**
+  Approved and documented project statuses/default, transitions, active-project definition, mutable fields and PATCH semantics, name validation, date-only due-date behavior, owner-scoped list behavior, routes, responses, and error handling in specification section 8.3. See project acceptance criteria in section 8.4.
 
-- [ ] **T02.2 — Implement project API**  
-  Implement create, list, detail, and update operations. Enforce that every project is linked only to a client owned by the current Owner.
+- [x] **T02.2 — Implement project API**
+  Implement authenticated create, list, detail, and update operations with owner-scoped persistence, client relationship validation, documented status/date/name rules, and the approved API/error contract.
 
-- [ ] **T02.3 — Add project frontend flows**  
+- [x] **T02.3 — Add project frontend flows**
   Add project create/list/detail/update flows using the documented API.
 
-- [ ] **T02.4 — Test project behavior and access control**  
+- [x] **T02.4 — Test project behavior and access control**
   Cover valid and invalid project data, missing records, cross-owner access, creation/relinking to inaccessible clients, status transitions, and persistence. Confirm permanent deletion is unavailable.
 
 ## Milestone 3 — Tasks

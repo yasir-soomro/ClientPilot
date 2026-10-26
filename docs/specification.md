@@ -65,7 +65,7 @@ Future features belong to later versions and must not be pulled into V1 without 
 **Relationships:**
 - One Owner can have many Clients.
 - Owner email addresses are unique across the application.
-- Duplicate Client records must be prevented within one Owner's workspace. The fields and normalization used to identify duplicates remain undecided.
+- Duplicate Client records must be prevented within one Owner's workspace using the approved matching and normalization rules in section 16.
 - One Client can have many Projects.
 - One Project can have many Tasks.
 - Every Client must belong to an Owner.
@@ -89,14 +89,14 @@ Ownership values are system-controlled. The backend must not trust an owner_id p
 | `id` | Unique client identifier | System-managed; generation format to be chosen in design |
 | `owner_id` | Owner who owns the record | System-managed; determined from authentication |
 | `name` | Client's name | Required; missing or blank value is rejected |
-| `email` | Client contact email | Optionality and validation rules must be finalized |
-| `company` | Client's company name | Optionality and validation rules must be finalized |
+| `email` | Client contact email | Optional; validation and normalization are defined in section 16 |
+| `company` | Client's company name | Optional; validation and normalization are defined in section 16 |
 | `created_at` | Creation timestamp | System-managed |
 | `updated_at` | Most recent update timestamp | System-managed; refreshed after successful update |
 
 ### 7.2 Operations
 - Create: an authenticated Owner can create a client in their workspace.
-- Duplicate prevention: an Owner cannot create duplicate client records within their workspace. The duplicate-matching fields, normalization rules, and conflict response must be finalized before implementation; do not infer that client name, email, or another field alone defines a duplicate.
+- Duplicate prevention: an Owner cannot create or update a client into a duplicate of another client in their workspace. The approved matching rule, normalization, optional-value behavior, and conflict response are defined in section 16.
 - List: an Owner receives only their own client records.
 - Detail: an Owner can view a client record they own.
 - Update: an Owner can update an existing client record they own.
@@ -106,9 +106,10 @@ Ownership values are system-controlled. The backend must not trust an owner_id p
 - Updates must not allow the caller to change `id`, `owner_id`, `created_at`, or other system-managed fields.
 - Create, list, detail, and update require authentication.
 - Client listing must be scoped to the authenticated Owner.
-- Client duplicate checks must be scoped to the authenticated Owner and must not treat another Owner's records as duplicates.
+- Client duplicate checks for create and update must be scoped to the authenticated Owner and must not treat another Owner's records as duplicates.
+- An update duplicate check compares the resulting client values against other clients owned by the current Owner, excluding the client being updated.
 - A caller must not view or modify another Owner's client by supplying or guessing its ID.
-- The exact API response format and status code for each validation, missing-record, and unauthorized case must be finalized in the API error contract.
+- Duplicate create/update attempts return the conflict response defined in section 16.
 ### 7.4 Client acceptance criteria
 Client Management is accepted when tests verify that:
 1. An unauthenticated caller cannot use private client operations.
@@ -120,32 +121,44 @@ Client Management is accepted when tests verify that:
 7. Successful create/update operations persist, and updated_at changes after a successful update.
 8. Client records remain available after restart.
 9. Permanent deletion is not available in the V1 interface or API.
-10. Duplicate clients are rejected within an Owner's workspace according to the approved matching rule; identical data in different Owners' workspaces remains isolated.
+10. Duplicate clients are rejected on create and update within an Owner's workspace according to the approved matching rule; identical data in different Owners' workspaces remains isolated.
+11. Duplicate matching applies the approved normalization consistently to create and update, while null optional values do not match each other.
+12. Updating a client without changing its duplicate-key values does not conflict with itself; an update that would duplicate another owned client is rejected without changing the record.
+13. A duplicate create or update returns `409 {"detail":"A client with these details already exists"}`.
 ## 8. Project Management Requirements
 ### 8.1 Required behavior
 - An authenticated Owner can create a project linked to one of their own clients.
 - An Owner can list and view only projects they are authorized to access.
 - An Owner can update an accessible project.
 - A project must have a name.
-- A project may have a due date; exact date/time handling must be defined before implementation.
+- A project may have an optional calendar due date, represented as an ISO `YYYY-MM-DD` date with no time-zone conversion.
 - A project cannot be linked to a client belonging to another Owner.
 - Permanent deletion is not supported in V1.
-### 8.2 Project fields to define in the data design
-At minimum, a project needs a system-managed identifier, owner-safe client relationship, name, optional due date, creation/update timestamps, and any agreed status field.
-### 8.3 Open project decisions
-Before project implementation, finalize:
-- Project status values and allowed transitions (the product overview says these are to be finalized in detailed design).
-- Which fields may be updated and whether update requests use PUT, PATCH, or a clearly defined equivalent.
-- Name validation rules and due-date format/time-zone behavior.
-- Exact API error response contract.
+### 8.2 Project fields
+At minimum, a project has a system-managed UUID, an owner-safe `client_id`, a name, a status, an optional date-only due date, and system-managed creation/update timestamps. The Owner is derived through the linked Client and is never accepted from request data.
+### 8.3 Approved project decisions
+1. **Status and default:** A project's status is one of `planned`, `in_progress`, or `completed`. Create requests may omit status; a new project defaults to `planned`. Null or any other status is invalid.
+2. **Transitions and active projects:** Any listed status may transition to any other listed status, including reopening a completed project. Only `in_progress` projects count as active for the dashboard.
+3. **Name validation:** Project names are trimmed, required, nonblank, and limited to 255 characters, matching Client name validation.
+4. **Due date:** `due_date` is optional and accepts an ISO calendar date (`YYYY-MM-DD`) only. It has no time-of-day or time-zone conversion. It may be set to `null` when updating to clear it. Invalid dates or date-time values are rejected with `422`.
+5. **Create and update fields:** Create requires `client_id` and `name`; `status` is optional with the default above; `due_date` is optional and may be null. `PATCH /api/projects/{project_id}` updates supplied fields among `name`, `client_id`, `due_date`, and `status`; an empty patch is invalid. `name`, `client_id`, and `status` cannot be null. `client_id` may be changed only to a client owned by the current Owner. Unknown and system-managed fields (`id`, `owner_id`, `created_at`, `updated_at`) are rejected.
+6. **Routes and responses:** `POST /api/projects` creates a project and returns `201`; `GET /api/projects` returns the current Owner's list; `GET /api/projects/{project_id}` reads one project; and `PATCH /api/projects/{project_id}` updates it. Successful reads and updates return `200`. Project responses contain `id`, `client_id`, `name`, `status`, `due_date`, `created_at`, and `updated_at`; `due_date` is serialized as `YYYY-MM-DD` or `null`. Responses do not expose `owner_id`.
+7. **List behavior:** The project list is unpaginated and has no filters or client-supplied sorting in V1. Results are ordered newest first, with project ID as a stable tie-breaker, matching the client-list behavior.
+8. **Errors and ownership:** Private operations require authentication (`401`). Invalid request fields return `422`. A missing project and a project not owned by the current Owner both return `404 {"detail":"Project not found"}`. A missing or foreign-owned linked client returns `404 {"detail":"Client not found"}`. These responses do not reveal another Owner's records. No project-delete route is provided.
 ### 8.4 Project acceptance criteria
 Tests must prove that:
 1. An Owner can create a project linked to their own client.
 2. A project cannot be created or moved to a client owned by another Owner.
 3. An Owner can list, view, and update only accessible projects.
-4. A project must have a valid name.
-5. Project data persists after restart.
-6. Permanent deletion is unavailable in V1.
+4. Missing, blank, and overlong names are rejected; surrounding whitespace is trimmed.
+5. Status values are restricted to the approved set, new projects default to `planned`, and all transitions including reopening are accepted.
+6. Only projects with status `in_progress` count as active in dashboard calculations.
+7. Due dates accept valid `YYYY-MM-DD` dates, permit `null`, reject invalid or date-time values, and have no time-zone conversion.
+8. PATCH accepts only the documented mutable fields, rejects empty patches and system-managed/unknown fields, and can clear the due date.
+9. Project lists are owner-scoped, unpaginated, and newest-first with a stable ID tie-breaker.
+10. Missing and foreign-owned projects return the same 404; missing and foreign-owned linked clients return the documented 404.
+11. Project data persists after restart.
+12. Permanent deletion is unavailable in V1.
 ## 9. Task Management Requirements
 ### 9.1 Required behavior
 - An authenticated Owner can create a task inside a project they can access.
@@ -178,7 +191,7 @@ All dashboard metrics must be calculated from persisted records belonging to the
 | Metric | Definition |
 |---|---|
 | Total clients | Number of client records owned by the current Owner |
-| Active projects | Count of projects classified as active; the status values and definition of active must be finalized with project statuses |
+| Active projects | Count of projects with status `in_progress` |
 | Pending tasks | Tasks with status `todo` or `in_progress` |
 | Project progress | Completed tasks divided by total tasks, multiplied by 100 |
 | Zero-task project | Progress is 0% when the project has no tasks |
@@ -202,7 +215,7 @@ The API must return predictable errors for at least:
 - Missing/invalid authentication.
 - Invalid relationship references, such as linking a project to an inaccessible client.
 - Invalid task status values.
-The Owner/client response and status contract, including the missing-versus-inaccessible client policy, is documented in section 16. Define corresponding contracts for future project, task, and dashboard endpoints before implementing them. Regardless of response choice, cross-owner data must not be disclosed or modified.
+The Owner/client response and status contract, including the missing-versus-inaccessible client policy, is documented in section 16. The project response and status contract is documented in section 8.3. Define corresponding contracts for task and dashboard endpoints before implementing them. Regardless of response choice, cross-owner data must not be disclosed or modified.
 ## 13. Initial Architecture Direction
 The initial architecture direction is:
 - Frontend: Next.js, responsible for screens, forms, and user interactions.
@@ -241,11 +254,11 @@ The following decisions are the approved V1 implementation baseline for Owner re
 2. **Password storage:** Passwords are hashed with Argon2 through `pwdlib`; plaintext passwords are never persisted.
 3. **Authentication and logout:** Login creates a cryptographically random opaque session token. Only its SHA-256 hash is stored in the database. The browser receives the token in an `HttpOnly`, `SameSite=Strict`, path `/` cookie with an eight-hour default lifetime. Logout deletes the stored session and clears the cookie, immediately invalidating that token. `AUTH_COOKIE_SECURE=true` is required when serving over HTTPS; it is false in the local development template.
 4. **Authentication errors:** Invalid email and password return the same `401` response. Missing, expired, or logged-out sessions return `401`. Session lookup derives the Owner from the persisted session, never from request data.
-5. **Client fields:** Name is required, trimmed, nonblank, and limited to 255 characters. Email and company are optional. A supplied email must be valid and is normalized to lowercase; a blank email is invalid. Company is trimmed, blank company becomes `null`, and its maximum length is 255 characters. Duplicate detection within one Owner's workspace is required, but its matching fields and normalization rules are not yet decided.
+5. **Client fields and duplicate detection:** Name is required, trimmed, nonblank, and limited to 255 characters. Email and company are optional. A supplied email must be valid and is trimmed and normalized to lowercase; a blank email is invalid. Company is trimmed, blank company becomes `null`, and its maximum length is 255 characters. Within one Owner's workspace, two clients are duplicates when either (a) both have non-null emails that match after the existing trim/lowercase normalization, or (b) their names and non-null company values match after trimming and case-insensitive comparison. The name-and-company rule applies whether or not either client has an email. Null email values do not match one another; null company values do not match one another and cannot satisfy the name-and-company rule. Duplicate checks use only the authenticated Owner's records. Create or update attempts that would produce a duplicate return `409 {"detail":"A client with these details already exists"}`.
 6. **Identifiers and timestamps:** User and client identifiers are server-generated UUIDs. Created and updated timestamps are UTC and serialized as ISO 8601 UTC. Client timestamps and identifiers cannot be changed through client requests.
 7. **Client updates:** `PATCH /api/clients/{client_id}` updates only supplied `name`, `email`, and `company` fields. An empty patch is invalid. Email and company may be set to `null`; name may not. Unknown/system-managed fields are rejected.
 8. **Client list behavior:** `GET /api/clients` is owner-scoped and ordered newest first, with identifier as a stable tie-breaker. Pagination, sorting options, and filters are deferred.
-9. **Error and missing-record contract:** Request validation uses FastAPI's `422` validation response. Duplicate registration email returns `409 {"detail":"An owner with this email already exists"}`. Invalid login credentials return the same `401` response. Unauthenticated private operations return `401`. A client that is missing and a client owned by another Owner both return `404 {"detail":"Client not found"}` so the API does not disclose whether a foreign record exists. Client deletion is not exposed (`405`).
+9. **Error and missing-record contract:** Request validation uses FastAPI's `422` validation response. Duplicate registration email returns `409 {"detail":"An owner with this email already exists"}`. Duplicate client create or update returns `409 {"detail":"A client with these details already exists"}`. Invalid login credentials return the same `401` response. Unauthenticated private operations return `401`. A client that is missing and a client owned by another Owner both return `404 {"detail":"Client not found"}` so the API does not disclose whether a foreign record exists. Client deletion is not exposed (`405`).
 10. **Routes:** `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/clients`, `GET /api/clients`, `GET /api/clients/{client_id}`, and `PATCH /api/clients/{client_id}`. No public delete or role-management route is provided.
 
 ### 16.1 Decision rationale
@@ -256,18 +269,18 @@ The following decisions are the approved V1 implementation baseline for Owner re
 - Registration intentionally does not create a session, so account creation and authentication remain separate operations. The unique database constraint remains authoritative if concurrent requests attempt the same email.
 - `HttpOnly` prevents ordinary browser scripts from reading the session cookie, `SameSite=Strict` reduces cross-site request forgery risk, and `Secure` is enabled for HTTPS deployments. The local HTTP development template disables `Secure` so the cookie works on localhost.
 - Returning the same `404` for missing and foreign-owned clients avoids confirming another Owner's record exists. Backend queries still apply the Owner filter before returning or changing a client.
+- Client duplicate detection uses a non-null normalized email as one duplicate key, and a non-null normalized name/company pair as another. Name/company matching is case-insensitive after trimming. This permits multiple clients with the same name when company is absent, while preventing a repeated email or repeated name-and-company pair within one Owner's workspace. Null optional values do not create matches. The same `409` response is used for create and update conflicts.
 - UTC timestamps and UUID identifiers provide consistent API timestamps and non-sequential resource identifiers. Pagination is deferred to keep the initial client list simple while the dataset is small.
 
 ## 17. Decisions Still Open
 
-1. Which client fields and normalization rules define a duplicate within one Owner's workspace, and the response when a duplicate is attempted.
-2. Project status values, active-project definition, and status transitions.
-3. Project update semantics and due-date/time-zone behavior.
-4. Task due-date support, editable fields, and status-transition rules.
-5. Dashboard deadline window, time-zone handling, and overdue display behavior.
-6. List behavior for future project/task endpoints.
-7. Delete/archive policy; permanent deletion remains excluded from V1.
-8. Backups and future production database/deployment requirements.
+1. Handling of duplicate client records that already exist when duplicate enforcement is introduced. Recommendation: preserve existing records without automatic merge or deletion; enforce the rule for new creates and updates, and separately report any pre-existing duplicate data for an owner-approved resolution.
+2. Concurrency handling for simultaneous client create/update requests that would otherwise pass separate duplicate checks. Recommendation: enforce the check within the write transaction and add a database-level safeguard where feasible; if the compound rule cannot be expressed safely as a constraint, document and test the chosen transaction/locking behavior.
+3. Task due-date support, editable fields, and status-transition rules.
+4. Dashboard deadline window, time-zone handling, and overdue display behavior.
+5. List behavior for future task endpoints.
+6. Delete/archive policy; permanent deletion remains excluded from V1.
+7. Backups and future production database/deployment requirements.
 
 ## 18. Next Step
-Complete the Owner/client frontend flows, then resolve the project decisions before starting project implementation. Update the relevant design documents and tests for each future milestone. Continue in small, testable increments; do not implement unresolved project, task, or dashboard behavior by assumption.
+Owner/client decisions and the Project backend contract are documented. Project decision task T02.1 is complete; the next development task is T02.2, implementing the Project API against section 8.3 and its acceptance criteria. Task, dashboard deadline, and deployment decisions remain open and must be resolved before their respective implementation milestones. Continue in small, testable increments; do not implement unresolved behavior by assumption.

@@ -2,7 +2,7 @@
 
 > **Source:** Converted and structured from `ClientPilot_V1_Product_Overview_and_User_Guide.pdf`.
 >
-> **Document status:** Draft 0.1 — requirements still need to be finalized.
+> **Document status:** Source-derived Draft 0.1 — Owner/client requirements are specified; later V1 feature decisions remain open.
 >
 > **Version scope:** ClientPilot V1 only. Future product versions must be planned separately.
 >
@@ -17,7 +17,7 @@
 | Product model | Model A — personal client/project management workspace |
 | Primary user | Freelancer or small-agency owner |
 | Initial stack direction | Next.js + FastAPI + SQLite |
-| Document status | Draft 0.1 — requirements to finalize |
+| Document status | Source-derived Draft 0.1; Owner/client baseline is specified, later feature decisions remain open |
 
 ## 2. Product Purpose
 
@@ -96,7 +96,7 @@ Only an authenticated owner may perform private operations.
 
 ### 8.2 Client ownership
 
-Each Owner has a private workspace and may view or update only their own client records. Duplicate clients are not allowed within one Owner's workspace; the matching rule must be finalized in the detailed specification.
+Each Owner has a private workspace and may view or update only their own client records. Duplicate clients are not allowed within one Owner's workspace. The approved matching, normalization, null-value, and conflict-response rules are documented in section 16 of the [software specification](./specification.md) and enforced by the backend.
 
 ### 8.3 Project-client relationship
 
@@ -131,7 +131,7 @@ Successful create/update operations must save data to the database.
 
 ### 8.9 Errors
 
-Invalid input, missing records, and unauthorized access must produce predictable responses. Exact API error schemas remain to be finalized in the detailed specification.
+Invalid input, missing records, and unauthorized access must produce predictable responses. Owner/client API error contracts are documented in the [software specification](./specification.md); contracts for later feature modules must be finalized before implementation.
 
 ## 9. Data Model and Relationships
 
@@ -163,7 +163,7 @@ User (Owner)
 | Metric | Meaning | V1 rule / note |
 |---|---|---|
 | Total clients | Number of client records owned by the signed-in owner. | Count only the current owner's clients. |
-| Active projects | Projects currently being worked on. | Exact project status values must be finalized in LLD; an active status is initially proposed. |
+| Active projects | Projects currently being worked on. | Count projects whose approved status is `in_progress`; see the [software specification](./specification.md). |
 | Pending tasks | Tasks that are not done. | Count both `todo` and `in_progress`. |
 | Upcoming deadlines | Due dates approaching soon. | Exact time window remains to be defined. Overdue items should not be hidden. |
 | Project progress | Portion of tasks completed. | `completed tasks / total tasks * 100`; zero tasks = `0%`. |
@@ -180,13 +180,13 @@ The initial stack direction is **Next.js + FastAPI + SQLite**.
 
 **Architecture principle:** The frontend provides the interface, the backend enforces rules, and the database stores records. Hiding a screen in the frontend is not sufficient security; the backend must authorize every private request.
 
-This document defines the initial stack direction only. Exact module structure, API contracts, authentication strategy, and deployment details must be defined in the architecture and detailed specification documents.
+This document defines the initial stack direction only. Module structure, Owner/client API contracts, and authentication strategy are documented in the architecture and detailed specification. Resolve deployment details and contracts for future feature modules before implementing those areas.
 
 ## 12. Features Included in V1
 
-- Controlled owner-account setup and secure login/logout.
+- Public Owner registration and secure login/logout.
 - Client records: create, list/view, and update.
-- Projects: create,pro list/view, and update; each project is linked to a client.
+- Projects: create, list/view, and update; each project is linked to a client.
 - Tasks: create, list/view, and update task status; each task is linked to a project.
 - Dashboard counts, task-based progress, and upcoming deadlines.
 - Database persistence, input validation, and ownership enforcement.
@@ -232,18 +232,15 @@ V1 is considered complete when all of the following are verified:
 
 ## 16. Decisions That Must Be Finalized Before Implementation
 
-The source PDF explicitly leaves these decisions open for the detailed specification / LLD:
+The source PDF left these decisions open for the detailed specification / LLD. Owner/client and Project backend decisions have since been recorded in the [software specification](./specification.md), which supersedes this source-derived list. Remaining decisions for future V1 milestones include:
 
-- Which client fields and normalization rules determine whether records are duplicates within one Owner's workspace.
-- Exact project status values and allowed status transitions.
-- Client/project update fields and validation requirements.
-- Deletion/archival policy.
+- Task update fields and validation requirements, including task status transitions and due-date support.
 - Upcoming-deadline time window and overdue-item behavior.
-- Authentication strategy (session-based or token-based) and initial owner-account provisioning.
-- List pagination, sorting/filtering, and API error-response format.
+- List behavior and API error-response details for future task endpoints.
+- Deletion/archival policy for any future operation; permanent deletion is excluded from V1.
 - Production database and deployment requirements after the initial local SQLite MVP.
 
-Do not silently treat these open decisions as settled requirements. Record and resolve them in the appropriate project document before implementing behavior that depends on them.
+Do not silently treat these remaining decisions as settled requirements. Record and resolve them in the appropriate project document before implementing behavior that depends on them.
 
 ## 17. Recommended Development Sequence
 

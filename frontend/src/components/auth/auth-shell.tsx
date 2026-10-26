@@ -19,7 +19,7 @@ export function AuthShell({ children, mode }: AuthShellProps) {
           <div className="absolute inset-0 opacity-[0.12] [background-image:radial-gradient(#ffffff_0.7px,transparent_0.7px)] [background-size:20px_20px]" />
         </div>
 
-        <Link href="/login" className="relative flex items-center gap-3">
+        <Link href="/" className="relative flex items-center gap-3">
           <BrandMark />
           <span className="text-lg font-semibold tracking-tight">ClientPilot</span>
         </Link>
@@ -60,7 +60,7 @@ export function AuthShell({ children, mode }: AuthShellProps) {
 
       <section className="flex min-h-screen flex-col px-6 py-7 sm:px-10 lg:px-14 xl:px-20">
         <div className="flex items-center justify-between lg:justify-end">
-          <Link href="/login" className="flex items-center gap-2.5 lg:hidden">
+          <Link href="/" className="flex items-center gap-2.5 lg:hidden">
             <BrandMark />
             <span className="font-semibold tracking-tight">ClientPilot</span>
           </Link>

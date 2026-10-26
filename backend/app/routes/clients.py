@@ -9,7 +9,11 @@ from sqlalchemy.orm import Session
 from app.dependencies.auth import CurrentUser
 from app.db.session import get_db
 from app.schemas.clients import ClientCreate, ClientRead, ClientUpdate
-from app.services.client_service import ClientNotFoundError, ClientService
+from app.services.client_service import (
+    ClientNotFoundError,
+    ClientService,
+    DuplicateClientError,
+)
 
 router = APIRouter()
 
@@ -20,7 +24,13 @@ def create_client(
     owner: CurrentUser,
     db: Annotated[Session, Depends(get_db)],
 ) -> ClientRead:
-    client = ClientService(db).create(owner.id, payload)
+    try:
+        client = ClientService(db).create(owner.id, payload)
+    except DuplicateClientError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A client with these details already exists",
+        ) from None
     return ClientRead.model_validate(client)
 
 
@@ -57,6 +67,11 @@ def update_client(
 ) -> ClientRead:
     try:
         client = ClientService(db).update(client_id, owner.id, payload)
+    except DuplicateClientError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A client with these details already exists",
+        ) from None
     except ClientNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Client not found"

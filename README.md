@@ -1,24 +1,44 @@
 # ClientPilot
 
-ClientPilot V1 is a private workspace for managing clients, projects, tasks, and delivery progress. See [the product overview](docs/product-overview.md), [specification](docs/specification.md), [architecture](docs/architecture.md), [implementation plan](docs/plan.md), and [task list](docs/tasks.md).
+ClientPilot is a private client and project management workspace for freelancers and small agencies. It helps an owner keep client contact records together, connect projects to the right clients, and review project status in one place instead of relying on scattered notes and spreadsheets.
+
+The current V1 implementation provides owner registration and authentication, owner-scoped client and project management, and an overview of client/project records. Task management and task-based delivery metrics are planned V1 work and are not yet available.
+
+## What ClientPilot solves
+
+- **Scattered client information:** Store client names, contact emails, and company details in one searchable workspace.
+- **Unclear client-to-project relationships:** Link each project to a client and view the related projects from that client’s details.
+- **Limited visibility into ongoing work:** Track project status and optional due dates, and review client/project totals and active projects on the overview.
+- **Privacy and ownership concerns:** Keep private operations behind owner authentication and enforce record ownership in the FastAPI backend.
+- **Lost or temporary records:** Persist owner, client, and project data in the database so it is not dependent on frontend or process memory.
+
+ClientPilot is for organizing work with existing clients. It is not a client/provider marketplace, and business clients do not create accounts or sign in.
+
+## Current V1 capabilities
+
+- Public landing page and owner registration, login, and logout.
+- Private workspace routes:
+  - `/dashboard` — client/project overview and counts.
+  - `/clients` and `/clients/{client_id}` — create, list, view, and update client records.
+  - `/projects` and `/projects/{project_id}` — create, list, view, and update projects linked to owned clients.
+- Owner-scoped client duplicate prevention on create and update.
+- Project statuses (`planned`, `in_progress`, `completed`) and optional date-only due dates.
+- Backend validation, authentication, authorization, parent-resource ownership checks, and persistent database storage.
+- Responsive public landing, authentication, and workspace layouts.
+
+Project and client lists, forms, and details use the existing authenticated API. The frontend is not an authorization boundary; the backend determines access and ownership.
+
+### Not yet available
+
+Task API and UI, task-based project progress, pending-task metrics, and task deadline views have not been implemented. Task behavior and dashboard deadline presentation decisions must be finalized before those milestones begin. Settings and permanent deletion are also not available in the current V1 scope.
 
 ## Repository layout
 
 - `frontend/` — Next.js application.
-- `backend/` — FastAPI application and tests.
-- `docs/` — V1 product and engineering documents.
+- `backend/` — FastAPI application, database migrations, and tests.
+- `docs/` — Product overview, specification, architecture, implementation plan, and task list.
 
-The backend owns authentication, validation, authorization, business rules, and persistence. Do not treat frontend visibility as a security boundary.
-
-## Authentication
-
-The frontend provides:
-
-- `/register` — create an Owner account using full name, email, password, and phone number.
-- `/login` — sign in with email and password.
-- `/dashboard` — verify the current session and provide the private client workspace.
-
-Registration does not sign the Owner in. After the success message, use the sign-in link. Successful login creates the existing backend session cookie and redirects to `/dashboard`; signing out revokes the session and returns to `/login`. Invalid fields, duplicate email, and invalid credentials are reported in the forms.
+See the [product overview](docs/product-overview.md), [software specification](docs/specification.md), [architecture](docs/architecture.md), [implementation plan](docs/plan.md), and [task list](docs/tasks.md) for detailed requirements and decisions.
 
 ## Prerequisites
 
@@ -26,22 +46,11 @@ Registration does not sign the Owner in. After the success message, use the sign
 - Python 3.13 or newer.
 - [uv](https://docs.astral.sh/uv/) for backend environment and dependency management.
 
-## Run the frontend
+## Run locally
+
+### Start the backend
 
 In PowerShell:
-
-```powershell
-Set-Location frontend
-Copy-Item .env.example .env.local
-npm ci
-npm run dev
-```
-
-Open `http://localhost:3000`. The frontend's `BACKEND_API_URL` setting defaults to `http://127.0.0.1:8000`; configure it in `frontend/.env.local` if the backend runs at another address. Frontend `/api` requests are proxied to FastAPI so authentication cookies remain same-origin.
-
-## Run the backend
-
-In another PowerShell window:
 
 ```powershell
 Set-Location backend
@@ -51,11 +60,30 @@ uv run alembic upgrade head
 uv run uvicorn app.main:app --reload
 ```
 
-Backend settings are loaded from `backend/.env`. Relative SQLite file paths in `DATABASE_URL` resolve from the backend directory, regardless of the process working directory. The local file uses SQLite by default; set `DATABASE_URL` there to configure another database URL. Keep credentials and other private values in `.env`, not in source files. `.env` is ignored by Git; `.env.example` contains only non-secret setup defaults and can be committed. For HTTPS deployments, set `AUTH_COOKIE_SECURE=true`.
+The FastAPI server listens at `http://127.0.0.1:8000`. Backend settings are loaded from `backend/.env`. SQLite is used by default; set `DATABASE_URL` there to use another database URL. Relative SQLite paths resolve from the backend directory. Keep credentials and environment-specific values in `.env`, not in source files. For HTTPS deployments, set `AUTH_COOKIE_SECURE=true`.
 
-The API provides public registration at `POST /api/auth/register`, login/logout and current-owner routes under `/api/auth`, and authenticated client create/list/detail/update routes under `/api/clients`. The dashboard integrates those client operations, including client details and editing. Registration requires full name, email, password, and an E.164 phone number; passwords are hashed by the backend. Registration does not create a login session. There is no client-delete endpoint. API behavior and validation decisions are documented in [the specification](docs/specification.md).
+### Start the frontend
 
-The FastAPI development server listens at `http://127.0.0.1:8000`.
+In another PowerShell window:
+
+```powershell
+Set-Location frontend
+Copy-Item .env.example .env.local
+npm ci
+npm run dev
+```
+
+Open `http://localhost:3000`. The frontend proxies `/api` requests to the backend using `BACKEND_API_URL`, which defaults to `http://127.0.0.1:8000`.
+
+Register an owner at `/register`, then sign in at `/login`. Registration does not sign the owner in automatically. After login, the private workspace is available at `/dashboard`. The backend hashes passwords and manages the session cookie.
+
+## API overview
+
+- `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
+- Authenticated client create/list/detail/update under `/api/clients`
+- Authenticated project create/list/detail/update under `/api/projects`
+
+There are no task or dashboard-statistics API endpoints yet. Client and project delete operations are not provided. See the [software specification](docs/specification.md) for request validation, response behavior, and ownership rules.
 
 ## Run checks
 
@@ -63,7 +91,9 @@ Frontend:
 
 ```powershell
 Set-Location frontend
+npm test
 npm run lint
+npx tsc --noEmit
 npm run build
 ```
 
@@ -73,5 +103,3 @@ Backend:
 Set-Location backend
 uv run pytest
 ```
-
-Projects, tasks, and dashboard metrics are not implemented in this milestone. Client duplicate matching remains undecided in the specification and is not enforced by the current API.
