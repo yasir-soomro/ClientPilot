@@ -12,6 +12,7 @@ import {
 import { FormField } from "@/components/auth/form-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TaskManagement } from "@/components/tasks/task-management";
 import { ApiError } from "@/features/api/client";
 import { listClients } from "@/features/clients/service";
 import type { Client } from "@/features/clients/types";
@@ -269,12 +270,12 @@ export function ProjectManagement({
   }
 
   return (
-    <section aria-labelledby="projects-heading" className="mt-12">
+    <section aria-labelledby="projects-heading" className="mt-0">
       <div className="mb-6">
-        <p className="text-sm font-semibold text-[#4355d9]">Workspace</p>
+        <p className="text-xs font-bold uppercase tracking-[0.14em] text-indigo-600">Workspace</p>
         <h2
           id="projects-heading"
-          className="mt-2 text-2xl font-semibold tracking-[-0.025em] text-[#182230]"
+          className="mt-2 text-3xl font-bold tracking-[-0.045em] text-[#182230]"
         >
           Projects
         </h2>
@@ -283,8 +284,8 @@ export function ProjectManagement({
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <section className="rounded-2xl border border-[#eaecf0] bg-white p-6 shadow-[0_8px_28px_rgba(16,24,40,0.04)]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <section className="cp-card p-5 sm:p-6">
           <h3 className="text-lg font-semibold text-[#182230]">
             Create a project
           </h3>
@@ -340,7 +341,7 @@ export function ProjectManagement({
                       ? "new-project-client-error"
                       : undefined
                   }
-                  className="h-12 w-full rounded-xl border border-[#d0d5dd] bg-white px-4 text-[15px] text-[#182230] outline-none transition focus:border-[#5969e8] focus:ring-4 focus:ring-[#5969e8]/10"
+                  className="h-11 w-full rounded-xl border border-[#dfe2ea] bg-white px-4 text-sm text-[#182230] shadow-[0_1px_2px_rgba(16,24,40,0.03)] outline-none transition hover:border-[#c7cad5] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
                 >
                   <option value="" disabled>
                     Select a client
@@ -387,7 +388,7 @@ export function ProjectManagement({
                       ? "new-project-status-error"
                       : undefined
                   }
-                  className="h-12 w-full rounded-xl border border-[#d0d5dd] bg-white px-4 text-[15px] text-[#182230] outline-none transition focus:border-[#5969e8] focus:ring-4 focus:ring-[#5969e8]/10"
+                  className="h-11 w-full rounded-xl border border-[#dfe2ea] bg-white px-4 text-sm text-[#182230] shadow-[0_1px_2px_rgba(16,24,40,0.03)] outline-none transition hover:border-[#c7cad5] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
                 >
                   {PROJECT_STATUSES.map((status) => (
                     <option key={status} value={status}>
@@ -419,7 +420,7 @@ export function ProjectManagement({
           )}
         </section>
 
-        <section className="rounded-2xl border border-[#eaecf0] bg-white p-6 shadow-[0_8px_28px_rgba(16,24,40,0.04)]">
+        <section className="cp-card p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <h3 className="text-lg font-semibold text-[#182230]">
               Your projects
@@ -480,7 +481,7 @@ export function ProjectManagement({
       {selectedId ? (
         <section
           aria-labelledby="project-details-heading"
-          className="mt-6 rounded-2xl border border-[#eaecf0] bg-white p-6 shadow-[0_8px_28px_rgba(16,24,40,0.04)]"
+          className="cp-card mt-5 p-5 sm:p-6"
         >
           <h3
             id="project-details-heading"
@@ -629,9 +630,7 @@ export function ProjectManagement({
                 </FormField>
                 <Button loading={updating}>Save changes</Button>
               </form>
-              <p className="rounded-xl bg-[#f7f8fc] p-4 text-sm leading-6 text-[#667085] lg:col-span-2">
-                Task management is not available yet.
-              </p>
+              <TaskManagement projectId={selectedProject.id} />
             </div>
           ) : null}
         </section>

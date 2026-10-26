@@ -32,12 +32,12 @@ Before implementing authentication or private data operations, document and appr
 | Client-list pagination, sorting, and filtering | Deferred; clients are unpaginated and newest-first |
 | Project statuses, default, active definition, transitions, update fields, name validation, date-only due dates, list behavior, and API errors | Decided for Projects in specification section 8.3 |
 | Project-list pagination, sorting, and filtering | Deferred; projects are unpaginated and newest-first |
-| Task due-date support, editable fields, and allowed status transitions | Task implementation |
+| Task fields, date-only due dates, status-only updates, and allowed status transitions | Decided in specification section 9.2 |
 | Deadline window, time-zone handling, and overdue grouping/display | Dashboard implementation |
 | SQLite setup and Alembic migration approach; backup/deployment details when required by the delivery environment | SQLite/Alembic setup implemented; backup/deployment deferred |
 | Delete/archive policy | Any deletion/archive work; permanent deletion remains excluded from V1 |
 
-The implementation plan does not prescribe behavior for the remaining project, task, and dashboard decisions where the specification leaves it open.
+The implementation plan does not prescribe behavior for the remaining dashboard decisions where the specification leaves it open.
 
 ## 3. Milestones
 
@@ -45,7 +45,7 @@ The implementation plan does not prescribe behavior for the remaining project, t
 
 **Goal:** Make the first implementation slice sufficiently specified.
 
-**Status:** Owner/client requirements are documented. The approved client duplicate rule is enforced by the backend and covered by API tests. Decisions for later project, task, and dashboard milestones remain open.
+**Status:** Owner/client and Project requirements are documented and implemented. Task requirements are now documented in specification section 9; dashboard deadline decisions remain open.
 
 **Completed work:**
 
@@ -155,14 +155,14 @@ The implementation plan does not prescribe behavior for the remaining project, t
 
 ### Milestone 3 — Tasks
 
-**Prerequisite:** Task due-date support, editable fields, status-transition rules, validation, and API behavior are documented.
+**Prerequisite:** Task due-date support, editable fields, status-transition rules, validation, and API behavior are documented in specification section 9.
 
 **Goal:** Manage tasks inside projects accessible to the current Owner.
 
 **Work:**
 
-- Implement task creation and list/view within accessible projects.
-- Implement task status updates and only other edits explicitly approved for V1.
+- Implement task creation, list/detail, and status updates within accessible projects.
+- Accept optional description and date-only due date on create; allow only status updates afterward.
 - Enforce project ownership on every task operation.
 - Use the V1 statuses `todo`, `in_progress`, and `done`.
 
@@ -170,7 +170,7 @@ The implementation plan does not prescribe behavior for the remaining project, t
 
 - An authenticated Owner can create and view tasks only within accessible projects.
 - Task titles are required and missing or blank titles are rejected.
-- Only the approved task statuses are accepted, with transitions following the documented rules.
+- Only `todo`, `in_progress`, and `done` are accepted; any listed status may transition to another listed status.
 - A task cannot be accessed or changed through another Owner's project.
 - Task records persist across application restarts.
 - No permanent task-delete operation is exposed.
@@ -180,7 +180,7 @@ The implementation plan does not prescribe behavior for the remaining project, t
 - Valid task creation/listing and invalid or blank title.
 - Valid and invalid status changes, including transition rules.
 - Missing task/project and cross-owner access attempts.
-- Due-date behavior if task due dates are approved for V1.
+- Optional description and date-only due-date validation.
 - Persistence across restart.
 
 ### Milestone 4 — Dashboard and deadlines

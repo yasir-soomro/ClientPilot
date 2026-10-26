@@ -3,14 +3,16 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { BriefcaseBusiness, LayoutDashboard, LogOut, Users } from "lucide-react";
 import { AuthApiError, getCurrentOwner, logoutOwner } from "@/features/auth/service";
 import type { Owner } from "@/features/auth/types";
 import { Button } from "@/components/ui/button";
+import { BrandMark } from "@/components/ui/brand-mark";
 
 const navigation = [
-  { href: "/dashboard", label: "Overview" },
-  { href: "/clients", label: "Clients" },
-  { href: "/projects", label: "Projects" },
+  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { href: "/clients", label: "Clients", icon: Users },
+  { href: "/projects", label: "Projects", icon: BriefcaseBusiness },
 ] as const;
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
@@ -79,22 +81,17 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f8fc]">
-      <header className="border-b border-[#eaecf0] bg-white">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-8 gap-y-4 px-5 py-4 sm:px-8">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-[#171a35] text-sm font-bold text-white">
-              CP
-            </span>
-            <span className="font-semibold tracking-tight text-[#182230]">
-              ClientPilot
-            </span>
+    <main className="min-h-screen bg-[#f6f7fb] lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
+      <aside className="border-b border-[#e7e9f0] bg-white lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
+        <div className="flex h-full flex-col px-4 py-5 sm:px-6 lg:px-5">
+          <Link href="/dashboard" className="flex items-center gap-3 px-2">
+            <BrandMark />
+            <span className="text-[15px] font-bold tracking-[-0.02em] text-[#182230]">ClientPilot</span>
           </Link>
-          <nav
-            aria-label="Workspace"
-            className="order-3 flex w-full gap-1 overflow-x-auto sm:order-2 sm:w-auto"
-          >
+          <p className="mb-3 mt-9 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#98a2b3]">Workspace</p>
+          <nav aria-label="Workspace" className="flex gap-1 overflow-x-auto lg:flex-col">
             {navigation.map(({ href, label }) => {
+              const Icon = navigation.find((item) => item.href === href)?.icon ?? LayoutDashboard;
               const active =
                 href === "/dashboard"
                   ? pathname === href
@@ -104,36 +101,46 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                   key={href}
                   href={href}
                   aria-current={active ? "page" : undefined}
-                  className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#5969e8]/20 ${
+                  className={`flex min-h-10 items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 ${
                     active
-                      ? "bg-[#eef0ff] text-[#3343bc]"
-                      : "text-[#667085] hover:bg-[#f2f4f7] hover:text-[#182230]"
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "text-[#667085] hover:bg-[#f6f7fb] hover:text-[#182230]"
                   }`}
                 >
+                  <Icon aria-hidden="true" size={17} strokeWidth={1.8} />
                   {label}
                 </Link>
               );
             })}
           </nav>
-          <div className="order-2 flex items-center gap-3 sm:order-3">
+          <div className="mt-auto hidden border-t border-[#eef0f4] pt-4 lg:block">
             {owner ? (
-              <span className="hidden max-w-40 truncate text-sm text-[#667085] md:block">
-                {owner.full_name ?? owner.email}
-              </span>
+              <div className="mb-3 flex items-center gap-3 px-2">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#e9eaff] text-xs font-bold text-indigo-700">{(owner.full_name ?? owner.email).slice(0, 1).toUpperCase()}</span>
+                <span className="min-w-0"><span className="block truncate text-sm font-semibold text-[#344054]">{owner.full_name ?? "Your workspace"}</span><span className="block truncate text-xs text-[#98a2b3]">{owner.email}</span></span>
+              </div>
             ) : null}
             <button
               type="button"
               onClick={handleLogout}
               disabled={signingOut || !owner}
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-[#475467] transition hover:bg-[#f2f4f7] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#5969e8]/20 disabled:opacity-60"
+              className="flex min-h-10 w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold text-[#667085] transition hover:bg-[#f6f7fb] hover:text-[#182230] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 disabled:opacity-60"
             >
-              {signingOut ? "Signing out…" : "Sign out"}
+              <LogOut aria-hidden="true" size={17} />{signingOut ? "Signing out…" : "Sign out"}
             </button>
           </div>
         </div>
-      </header>
+      </aside>
 
-      <section className="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
+      <div className="min-w-0">
+      <header className="flex h-[68px] items-center justify-between border-b border-[#e7e9f0] bg-white/90 px-5 sm:px-8 lg:px-10">
+        <p className="text-sm font-medium text-[#667085]">Private workspace <span className="mx-2 text-[#d0d5dd]">/</span><span className="text-[#344054]">{navigation.find((item) => item.href === (pathname.startsWith("/clients") ? "/clients" : pathname.startsWith("/projects") ? "/projects" : "/dashboard"))?.label}</span></p>
+        <div className="flex items-center gap-3 lg:hidden">
+          {owner ? <span className="flex size-8 items-center justify-center rounded-full bg-indigo-50 text-xs font-bold text-indigo-700">{(owner.full_name ?? owner.email).slice(0, 1).toUpperCase()}</span> : null}
+          <button type="button" onClick={handleLogout} disabled={signingOut || !owner} aria-label="Sign out" className="rounded-lg p-2 text-[#667085] hover:bg-[#f6f7fb] disabled:opacity-60"><LogOut size={17} /></button>
+        </div>
+      </header>
+      <section className="mx-auto w-full max-w-[1440px] px-5 py-8 sm:px-8 sm:py-10 lg:px-10">
         {loading ? (
           <div
             className="rounded-2xl border border-[#eaecf0] bg-white p-8 text-sm text-[#667085]"
@@ -173,6 +180,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           </>
         ) : null}
       </section>
+      </div>
     </main>
   );
 }

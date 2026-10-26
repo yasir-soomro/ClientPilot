@@ -168,14 +168,24 @@ Tests must prove that:
 - Task status is restricted to `todo`, `in_progress`, or `done`.
 - A task cannot be created or changed through a project belonging to another Owner.
 - Permanent deletion is not supported in V1.
-### 9.2 Task fields to define in the data design
-At minimum, a task needs a system-managed identifier, project relationship, title, status, creation/update timestamps, and an optional due date if due dates are confirmed for tasks in V1.
-### 9.3 Open task decisions
-Before task implementation, finalize:
-- Whether tasks have a due date in V1 and its exact behavior.
-- Whether title and other task fields can be edited after creation, beyond status changes.
-- Whether any status transitions are restricted or all listed statuses may transition to one another.
-- Exact API error response contract.
+### 9.2 Task fields and API contract
+- `id`: system-managed UUID.
+- `project_id`: system-managed relationship, inferred from the project route and never accepted from the request body.
+- `title`: required, trimmed, nonblank, and at most 255 characters.
+- `description`: optional; trimmed; at most 5,000 characters; blank input is stored as `null`.
+- `due_date`: optional date-only value in `YYYY-MM-DD` format; `null` is accepted; date-times and invalid calendar dates are rejected.
+- `status`: `todo`, `in_progress`, or `done`; omitted on create defaults to `todo`. Any listed status may transition to any other listed status.
+- `created_at` and `updated_at`: system-managed UTC timestamps.
+- Only status may be updated after creation. Title and description are not editable, and task deletion is unavailable.
+
+### 9.3 Routes, lists, and errors
+- `POST /api/projects/{project_id}/tasks` creates a task and returns `201`.
+- `GET /api/projects/{project_id}/tasks` returns the project's tasks, unpaginated and newest-first with ID as a stable tie-breaker.
+- `GET /api/projects/{project_id}/tasks/{task_id}` returns task details.
+- `PATCH /api/projects/{project_id}/tasks/{task_id}` accepts exactly a non-empty `{ "status": ... }` body and returns the updated task.
+- Task responses contain `id`, `project_id`, `title`, `description`, `due_date`, `status`, `created_at`, and `updated_at`; they do not expose owner identifiers.
+- Every route requires authentication and verifies ownership through project → client → current Owner. Missing and inaccessible projects/tasks return `404` (`Project not found` or `Task not found`); unauthenticated requests return `401`; invalid request data returns `422` using FastAPI's existing validation response format.
+
 ### 9.4 Task acceptance criteria
 Tests must prove that:
 1. An Owner can create and list tasks within an accessible project.
@@ -185,6 +195,8 @@ Tests must prove that:
 5. Tasks cannot be accessed or changed through another Owner's project.
 6. Task data persists after restart.
 7. Permanent deletion is unavailable in V1.
+8. Create, list, detail, and status-update routes return the documented response shapes and status codes.
+9. Optional descriptions and date-only due dates are persisted and validated.
 ## 10. Dashboard Requirements
 All dashboard metrics must be calculated from persisted records belonging to the currently authenticated Owner. Data from another Owner must never be included.
 
@@ -215,7 +227,7 @@ The API must return predictable errors for at least:
 - Missing/invalid authentication.
 - Invalid relationship references, such as linking a project to an inaccessible client.
 - Invalid task status values.
-The Owner/client response and status contract, including the missing-versus-inaccessible client policy, is documented in section 16. The project response and status contract is documented in section 8.3. Define corresponding contracts for task and dashboard endpoints before implementing them. Regardless of response choice, cross-owner data must not be disclosed or modified.
+The Owner/client response and status contract, including the missing-versus-inaccessible client policy, is documented in section 16. The project response and status contract is documented in section 8.3. The task response and status contract is documented in section 9.3. Dashboard endpoint details remain to be finalized. Regardless of response choice, cross-owner data must not be disclosed or modified.
 ## 13. Initial Architecture Direction
 The initial architecture direction is:
 - Frontend: Next.js, responsible for screens, forms, and user interactions.
@@ -224,7 +236,7 @@ The initial architecture direction is:
 - Communication: frontend and backend communicate through a documented HTTP/JSON API.
 - Backend style: a modular monolith (one backend application separated into internal modules), not microservices.
 - Repository layout: frontend and backend live in separate directories within one project repository.
-The current Owner/client module boundaries, routes, data rules, and authentication mechanism are documented in the architecture and this specification. Define remaining project, task, and dashboard details before those milestones.
+The current Owner/client, Project, and Task module boundaries, routes, data rules, and authentication mechanism are documented in the architecture and this specification. Dashboard deadline details remain open.
 ## 14. Non-Functional Requirements
 - Security: server-side authentication and ownership checks are mandatory for private data.
 - Persistence: committed records survive application restarts.
@@ -276,11 +288,11 @@ The following decisions are the approved V1 implementation baseline for Owner re
 
 1. Handling of duplicate client records that already exist when duplicate enforcement is introduced. Recommendation: preserve existing records without automatic merge or deletion; enforce the rule for new creates and updates, and separately report any pre-existing duplicate data for an owner-approved resolution.
 2. Concurrency handling for simultaneous client create/update requests that would otherwise pass separate duplicate checks. Recommendation: enforce the check within the write transaction and add a database-level safeguard where feasible; if the compound rule cannot be expressed safely as a constraint, document and test the chosen transaction/locking behavior.
-3. Task due-date support, editable fields, and status-transition rules.
+3. Task due-date, editable-field, and status-transition rules are decided in section 9.2.
 4. Dashboard deadline window, time-zone handling, and overdue display behavior.
-5. List behavior for future task endpoints.
+5. Task list behavior is decided in section 9.3.
 6. Delete/archive policy; permanent deletion remains excluded from V1.
 7. Backups and future production database/deployment requirements.
 
 ## 18. Next Step
-Owner/client decisions and the Project backend contract are documented. Project decision task T02.1 is complete; the next development task is T02.2, implementing the Project API against section 8.3 and its acceptance criteria. Task, dashboard deadline, and deployment decisions remain open and must be resolved before their respective implementation milestones. Continue in small, testable increments; do not implement unresolved behavior by assumption.
+Owner/client, Project, and Task contracts are documented in sections 16, 8.3, and 9. Task implementation follows the Task API and acceptance criteria in section 9. Dashboard deadline and deployment decisions remain open and must be resolved before their respective implementation milestones. Continue in small, testable increments; do not implement unresolved behavior by assumption.

@@ -10,6 +10,7 @@ from app.models.timestamps import TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.client import Client
+    from app.models.task import Task
 
 
 class Project(TimestampMixin, Base):
@@ -31,3 +32,7 @@ class Project(TimestampMixin, Base):
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     client: Mapped["Client"] = relationship(back_populates="projects")
+    tasks: Mapped[list["Task"]] = relationship(
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )

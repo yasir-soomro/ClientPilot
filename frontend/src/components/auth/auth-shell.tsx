@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, MotionConfig } from "framer-motion";
+import { BrandMark } from "@/components/ui/brand-mark";
 
 type AuthShellProps = {
   children: ReactNode;
@@ -11,6 +12,7 @@ export function AuthShell({ children, mode }: AuthShellProps) {
   const isLogin = mode === "login";
 
   return (
+    <MotionConfig reducedMotion="user">
     <main className="min-h-screen bg-white lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(480px,0.92fr)]">
       <aside className="relative hidden min-h-screen overflow-hidden bg-[#171a35] px-12 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-20 xl:py-14">
         <div aria-hidden="true" className="absolute inset-0">
@@ -20,7 +22,7 @@ export function AuthShell({ children, mode }: AuthShellProps) {
         </div>
 
         <Link href="/" className="relative flex items-center gap-3">
-          <BrandMark />
+          <BrandMark className="bg-[#5969e8]" />
           <span className="text-lg font-semibold tracking-tight">ClientPilot</span>
         </Link>
 
@@ -61,7 +63,7 @@ export function AuthShell({ children, mode }: AuthShellProps) {
       <section className="flex min-h-screen flex-col px-6 py-7 sm:px-10 lg:px-14 xl:px-20">
         <div className="flex items-center justify-between lg:justify-end">
           <Link href="/" className="flex items-center gap-2.5 lg:hidden">
-            <BrandMark />
+            <BrandMark className="bg-[#5969e8]" />
             <span className="font-semibold tracking-tight">ClientPilot</span>
           </Link>
           <p className="text-sm text-[#667085]">
@@ -94,19 +96,6 @@ export function AuthShell({ children, mode }: AuthShellProps) {
         </footer>
       </section>
     </main>
-  );
-}
-
-function BrandMark() {
-  return (
-    <span className="flex size-9 items-center justify-center rounded-xl bg-[#5969e8] shadow-sm">
-      <svg viewBox="0 0 24 24" fill="none" className="size-5" aria-hidden="true">
-        <path
-          d="M5 17.5 9.3 6.5h2.2l4.1 11h-2.4l-.9-2.6H8.2l-1 2.6H5Z"
-          fill="white"
-        />
-        <path d="M14.8 6.5H19v11h-2.2v-8.8h-2V6.5Z" fill="#B9C2FF" />
-      </svg>
-    </span>
+    </MotionConfig>
   );
 }

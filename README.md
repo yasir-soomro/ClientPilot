@@ -2,7 +2,7 @@
 
 ClientPilot is a private client and project management workspace for freelancers and small agencies. It helps an owner keep client contact records together, connect projects to the right clients, and review project status in one place instead of relying on scattered notes and spreadsheets.
 
-The current V1 implementation provides owner registration and authentication, owner-scoped client and project management, and an overview of client/project records. Task management and task-based delivery metrics are planned V1 work and are not yet available.
+The current V1 implementation provides owner registration and authentication, owner-scoped client, project, and task management, and an overview of client/project records. Dashboard task metrics and deadline summaries remain planned work.
 
 ## What ClientPilot solves
 
@@ -21,6 +21,7 @@ ClientPilot is for organizing work with existing clients. It is not a client/pro
   - `/dashboard` — client/project overview and counts.
   - `/clients` and `/clients/{client_id}` — create, list, view, and update client records.
   - `/projects` and `/projects/{project_id}` — create, list, view, and update projects linked to owned clients.
+- Task creation, listing, details, and status updates are available within project details. Tasks can have an optional description and date-only due date.
 - Owner-scoped client duplicate prevention on create and update.
 - Project statuses (`planned`, `in_progress`, `completed`) and optional date-only due dates.
 - Backend validation, authentication, authorization, parent-resource ownership checks, and persistent database storage.
@@ -30,7 +31,7 @@ Project and client lists, forms, and details use the existing authenticated API.
 
 ### Not yet available
 
-Task API and UI, task-based project progress, pending-task metrics, and task deadline views have not been implemented. Task behavior and dashboard deadline presentation decisions must be finalized before those milestones begin. Settings and permanent deletion are also not available in the current V1 scope.
+Task-based project progress, pending-task metrics, and task deadline views have not been implemented. Dashboard deadline presentation decisions remain open. Settings and permanent deletion are also not available in the current V1 scope.
 
 ## Repository layout
 
@@ -82,8 +83,9 @@ Register an owner at `/register`, then sign in at `/login`. Registration does no
 - `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
 - Authenticated client create/list/detail/update under `/api/clients`
 - Authenticated project create/list/detail/update under `/api/projects`
+- Authenticated task create/list/detail/status updates under `/api/projects/{project_id}/tasks`
 
-There are no task or dashboard-statistics API endpoints yet. Client and project delete operations are not provided. See the [software specification](docs/specification.md) for request validation, response behavior, and ownership rules.
+Client, project, and task delete operations are not provided. See the [software specification](docs/specification.md) for request validation, response behavior, and ownership rules.
 
 ## Run checks
 

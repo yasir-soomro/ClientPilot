@@ -83,13 +83,13 @@ Owner 1 ─── * Client 1 ─── * Project 1 ─── * Task
 | Owner | Account identity with a globally unique email, full name, E.164 phone number, and securely hashed password; multiple Owners may register and each has a private workspace. The profile columns remain nullable for pre-existing accounts during migration, but registration requires both values. |
 | Client | UUID and UTC timestamps are system-managed; belongs to one Owner; name is required; email and company are optional under the rules in the specification. Duplicate prevention is owner-scoped and follows the matching and conflict contract in specification section 16. |
 | Project | System-managed UUID and timestamps; linked to a Client owned by the current Owner; trimmed nonblank name (maximum 255 characters); status `planned`, `in_progress`, or `completed` (new projects default to `planned`); optional date-only `due_date` (`YYYY-MM-DD`). Approved Project API and update rules are in specification section 8.3. |
-| Task | System-managed identifier and timestamps; belongs to a Project accessible to the current Owner; title is required; status is `todo`, `in_progress`, or `done`. Task due-date support remains open. |
+| Task | System-managed UUID and timestamps; belongs to an accessible Project; trimmed title (maximum 255 characters); optional description (maximum 5,000 characters) and date-only due date; status `todo`, `in_progress`, or `done` (default `todo`). Only status is editable; all listed status transitions are allowed. |
 
-Use persistent database records. Ownership must be enforced on every private API read and write, including dashboard calculations: clients are scoped to their Owner, projects must reference that Owner's client, and tasks must belong to an accessible project. Enforce the approved client-duplicate rule within the Owner boundary as specified in section 16. The Owner/client identifiers, columns, constraints, UTC timestamps, and Alembic migration are implemented; define remaining project/task schema details with those milestones.
+Use persistent database records. Ownership must be enforced on every private API read and write, including dashboard calculations: clients are scoped to their Owner, projects must reference that Owner's client, and tasks must belong to an accessible project. Enforce the approved client-duplicate rule within the Owner boundary as specified in section 16. Owner/client, Project, and Task identifiers, columns, constraints, UTC timestamps, and Alembic migrations follow the documented feature contracts.
 
 ### 2.3 Backend boundaries
 
-- **API:** Exposes logical operation groups for authentication, clients, and projects. The implemented Owner/client/project routes and their status behavior are documented in the specification; task and dashboard routes remain pending.
+- **API:** Exposes logical operation groups for authentication, clients, projects, and tasks. Task routes are nested under projects and all task reads/mutations verify ownership through the project's client.
 - **Authentication:** Verifies a registered Owner and supplies the authenticated identity to private operations. The Owner registration, session, logout, and cookie decisions are documented in the specification.
 - **Feature modules:** Validate feature inputs, apply business rules, and enforce ownership and relationship checks before accessing data.
 - **Database access:** Persists and retrieves records from SQLite. Data must survive application restarts.
@@ -97,7 +97,7 @@ Use persistent database records. Ownership must be enforced on every private API
 
 ### 2.4 Frontend boundaries
 
-The frontend provides a public landing page at `/`, authentication at `/login` and `/register`, and authenticated workspace routes at `/dashboard`, `/clients`, `/clients/{client_id}`, `/projects`, and `/projects/{project_id}`. Workspace routes verify the current Owner through the existing authentication API; resource data continues to use the shared authenticated API client and owner-scoped backend endpoints. The overview derives client and project counts from those existing list APIs; task counts, task-based progress, and deadline summaries remain unavailable until their backend contracts and milestone decisions are implemented. Task and settings pages are not exposed. The frontend may guide input and hide unavailable actions, but it must not be relied on for authentication, authorization, ownership, or validation.
+The frontend provides a public landing page at `/`, authentication at `/login` and `/register`, and authenticated workspace routes at `/dashboard`, `/clients`, `/clients/{client_id}`, `/projects`, and `/projects/{project_id}`. Workspace routes verify the current Owner through the existing authentication API; resource data continues to use the shared authenticated API client and owner-scoped backend endpoints. Project detail includes task creation, listing, and status updates. The frontend may guide input, but it must not be relied on for authentication, authorization, ownership, or validation.
 
 ### 2.5 V1 boundaries
 
@@ -128,9 +128,9 @@ Owner registration/authentication, client fields and update behavior, session ha
 Resolve and document these remaining decisions before the related future implementation:
 
 1. Handling of duplicate client records that predate enforcement and concurrency behavior for simultaneous duplicate writes; recommendations are recorded in specification section 17.
-2. Task due-date support, editable fields, and status transitions.
+2. Task decisions are recorded in specification section 9.2.
 3. Dashboard deadline window, time-zone handling, and overdue presentation.
-4. List behavior for future task endpoints.
+4. Task list behavior is decided in specification section 9.3.
 5. Backups and deployment-specific database requirements.
 
-Project status, update, validation, due-date, list, and API decisions are recorded in specification section 8.3. Task milestones must resolve task due-date, edit, and status-transition rules; dashboard work must resolve deadline-window, display time-zone, and overdue presentation. Permanent deletion remains outside V1 unless the scope is explicitly changed.
+Project status, update, validation, due-date, list, and API decisions are recorded in specification section 8.3. Task decisions are recorded in specification section 9. Dashboard deadline-window, display time-zone, and overdue presentation remain open. Permanent deletion remains outside V1 unless the scope is explicitly changed.

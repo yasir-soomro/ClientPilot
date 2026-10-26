@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { ClientManagement } from "@/components/clients/client-management";
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";
+
+export const metadata: Metadata = {
+  title: "Client details",
+  robots: { index: false, follow: false },
+};
 
 export const instant = false;
 

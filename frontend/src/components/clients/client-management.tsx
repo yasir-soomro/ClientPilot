@@ -238,12 +238,12 @@ export function ClientManagement({
   }
 
   return (
-    <section aria-labelledby="clients-heading" className="mt-12">
+    <section aria-labelledby="clients-heading" className="mt-0">
       <div className="mb-6">
-        <p className="text-sm font-semibold text-[#4355d9]">Workspace</p>
+        <p className="text-xs font-bold uppercase tracking-[0.14em] text-indigo-600">Workspace</p>
         <h2
           id="clients-heading"
-          className="mt-2 text-2xl font-semibold tracking-[-0.025em] text-[#182230]"
+          className="mt-2 text-3xl font-bold tracking-[-0.045em] text-[#182230]"
         >
           Clients
         </h2>
@@ -252,8 +252,8 @@ export function ClientManagement({
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <section className="rounded-2xl border border-[#eaecf0] bg-white p-6 shadow-[0_8px_28px_rgba(16,24,40,0.04)]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <section className="cp-card p-5 sm:p-6">
           <h3 className="text-lg font-semibold text-[#182230]">Add a client</h3>
           <form className="mt-5 space-y-4" onSubmit={handleCreate} noValidate>
             {createError ? (
@@ -324,7 +324,7 @@ export function ClientManagement({
           </form>
         </section>
 
-        <section className="rounded-2xl border border-[#eaecf0] bg-white p-6 shadow-[0_8px_28px_rgba(16,24,40,0.04)]">
+        <section className="cp-card p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <h3 className="text-lg font-semibold text-[#182230]">
               Your clients
@@ -381,7 +381,7 @@ export function ClientManagement({
       {selectedId ? (
         <section
           aria-labelledby="client-details-heading"
-          className="mt-6 rounded-2xl border border-[#eaecf0] bg-white p-6 shadow-[0_8px_28px_rgba(16,24,40,0.04)]"
+          className="cp-card mt-5 p-5 sm:p-6"
         >
           <h3
             id="client-details-heading"
