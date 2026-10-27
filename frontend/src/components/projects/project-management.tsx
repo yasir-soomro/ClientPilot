@@ -88,7 +88,7 @@ export function ProjectManagement({
   const [updating, setUpdating] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const detailRequest = useRef(0);
+  const detailRequest = useRef(0);\n\n  useEffect(() => {\n    if (typeof window === "undefined") return;\n    const params = new URLSearchParams(window.location.search);\n    if (params.get("create") !== "1") return;\n    setCreateOpen(true);\n    params.delete("create");\n    const query = params.toString();\n    router.replace("/projects" + (query ? "?" + query : ""), { scroll: false });\n  }, [router]);
 
   const handleApiError = useCallback(
     (error: unknown): string => {

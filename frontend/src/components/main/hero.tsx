@@ -14,7 +14,7 @@ import {
 
 export default function Hero() {
   return (
-    <section className="relative isolate overflow-hidden border-b border-slate-200/70 bg-white">
+    <section id="home" className="relative isolate scroll-mt-24 overflow-hidden border-b border-slate-200/70 bg-white">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
