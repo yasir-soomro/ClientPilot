@@ -23,7 +23,10 @@ def create_owner(db_session: Session, email: str = OWNER_EMAIL) -> User:
     AuthService(db_session).register_owner(
         email, OWNER_PASSWORD, OWNER_FULL_NAME, OWNER_PHONE_NUMBER
     )
-    return db_session.scalar(select(User).where(User.email == email.lower()))
+    owner = db_session.scalar(select(User).where(User.email == email.lower()))
+    owner.email_verified_at = datetime.now(UTC)
+    db_session.commit()
+    return owner
 
 
 def test_registration_stores_only_a_password_hash(
@@ -83,7 +86,7 @@ def test_registration_creates_owner_with_hashed_password_and_safe_response(
 
 
 def test_registered_owner_can_log_in_and_access_only_their_clients(
-    api_client: TestClient,
+    api_client: TestClient, db_session: Session,
 ) -> None:
     registration = api_client.post(
         "/api/auth/register",
@@ -95,6 +98,9 @@ def test_registered_owner_can_log_in_and_access_only_their_clients(
         },
     )
     assert registration.status_code == 201
+    owner = db_session.scalar(select(User).where(User.email == OWNER_EMAIL))
+    owner.email_verified_at = datetime.now(UTC)
+    db_session.commit()
 
     login_response = api_client.post(
         "/api/auth/login",
@@ -112,8 +118,61 @@ def test_registered_owner_can_log_in_and_access_only_their_clients(
     ]
 
 
+def test_email_otp_verification_is_required_and_creates_session(
+    api_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    delivered: dict[str, str] = {}
+
+    def capture_code(_service: AuthService, email: str, code: str) -> None:
+        delivered[email] = code
+
+    monkeypatch.setattr("app.services.auth_service.AuthService._deliver_verification_code", capture_code)
+    registration = api_client.post(
+        "/api/auth/register",
+        json={"email": "otp@example.com", "password": OWNER_PASSWORD, "full_name": OWNER_FULL_NAME, "phone_number": OWNER_PHONE_NUMBER},
+    )
+    assert registration.status_code == 201
+    assert api_client.post("/api/auth/login", json={"email": "otp@example.com", "password": OWNER_PASSWORD}).status_code == 403
+    verification = api_client.post("/api/auth/verify-email", json={"email": "otp@example.com", "code": delivered["otp@example.com"]})
+    assert verification.status_code == 200
+    assert verification.json()["email_verified"] is True
+    login = api_client.post("/api/auth/login", json={"email": "otp@example.com", "password": OWNER_PASSWORD})
+    assert login.status_code == 200
+    assert api_client.get("/api/clients").status_code == 200
+
+
+def test_email_otp_rejects_malformed_wrong_and_reused_codes(
+    api_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    delivered: dict[str, str] = {}
+
+    def capture_code(_service: AuthService, email: str, code: str) -> None:
+        delivered[email] = code
+
+    monkeypatch.setattr("app.services.auth_service.AuthService._deliver_verification_code", capture_code)
+    email = "otp-errors@example.com"
+    response = api_client.post(
+        "/api/auth/register",
+        json={"email": email, "password": OWNER_PASSWORD, "full_name": OWNER_FULL_NAME, "phone_number": OWNER_PHONE_NUMBER},
+    )
+    assert response.status_code == 201
+    assert api_client.post("/api/auth/verify-email", json={"email": email, "code": "123"}).status_code == 422
+    assert api_client.post("/api/auth/verify-email", json={"email": email, "code": "000000"}).json() == {"detail": "This verification code is invalid or expired."}
+    verified = api_client.post("/api/auth/verify-email", json={"email": email, "code": delivered[email]})
+    assert verified.status_code == 200
+    reused = api_client.post("/api/auth/verify-email", json={"email": email, "code": delivered[email]})
+    assert reused.status_code == 400
+    assert reused.json() == {"detail": "This verification code is invalid or expired."}
+
+
+def test_oauth_start_reports_missing_provider_configuration(api_client: TestClient) -> None:
+    response = api_client.get("/api/auth/oauth/google/start")
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Google OAuth is not configured: client ID and client secret are required"}
+
+
 def test_registered_owner_persists_across_database_sessions(
-    api_client: TestClient, test_engine: Engine
+    api_client: TestClient, test_engine: Engine, db_session: Session
 ) -> None:
     registration = api_client.post(
         "/api/auth/register",
@@ -134,6 +193,9 @@ def test_registered_owner_persists_across_database_sessions(
     assert owner is not None
     assert owner.email == OWNER_EMAIL
     assert owner.password_hash.startswith("$argon2")
+    owner = db_session.scalar(select(User).where(User.id == registration.json()["id"]))
+    owner.email_verified_at = datetime.now(UTC)
+    db_session.commit()
 
     login_response = api_client.post(
         "/api/auth/login",

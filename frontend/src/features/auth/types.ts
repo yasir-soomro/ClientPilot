@@ -5,6 +5,7 @@ export type Owner = {
   phone_number: string | null;
   created_at: string;
   updated_at: string;
+  email_verified: boolean;
 };
 
 export type LoginInput = {

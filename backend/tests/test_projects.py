@@ -21,7 +21,10 @@ def create_owner(db_session: Session, email: str) -> User:
     AuthService(db_session).register_owner(
         email, OWNER_PASSWORD, OWNER_FULL_NAME, OWNER_PHONE_NUMBER
     )
-    return db_session.scalar(select(User).where(User.email == email.lower()))
+    owner = db_session.scalar(select(User).where(User.email == email.lower()))
+    owner.email_verified_at = datetime.now(UTC)
+    db_session.commit()
+    return owner
 
 
 def login(client: TestClient, email: str) -> None:

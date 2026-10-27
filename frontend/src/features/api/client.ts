@@ -39,7 +39,10 @@ function errorMessage(payload: unknown, status: number): string {
   if (status === 401) {
     return "Authentication is required. Sign in again.";
   }
-  return "We couldn’t complete your request. Please try again.";
+  if (status >= 500) {
+    return "ClientPilot is temporarily unavailable. Please try again in a moment.";
+  }
+  return "We couldn't complete your request. Please try again.";
 }
 
 async function request(

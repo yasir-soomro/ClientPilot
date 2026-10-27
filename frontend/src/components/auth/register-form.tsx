@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState, type FormEvent } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
@@ -10,8 +11,10 @@ import { Input } from "@/components/ui/input";
 import { registerOwner } from "@/features/auth/service";
 import { validateRegisterInput } from "@/features/auth/schema";
 import type { FieldErrors, RegisterInput } from "@/features/auth/types";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
 
 export function RegisterForm() {
+  const router = useRouter();
   const [errors, setErrors] = useState<FieldErrors<keyof RegisterInput>>({});
   const [apiError, setApiError] = useState("");
   const [success, setSuccess] = useState("");
@@ -38,10 +41,8 @@ export function RegisterForm() {
     setLoading(true);
     try {
       const owner = await registerOwner(input);
-      form.reset();
-      setSuccess(
-        `Your account is ready, ${owner.full_name ?? "there"}. Sign in to open your workspace.`,
-      );
+      const query = new URLSearchParams({ email: owner.email });
+      router.push(`/verify-email?${query.toString()}`);
       setErrors({});
     } catch (error) {
       setApiError(
@@ -178,6 +179,8 @@ export function RegisterForm() {
           Your account starts with a private workspace only you can access.
         </p>
       </form>
+      <div className="my-6 flex items-center gap-3 text-xs font-medium text-[#98a2b3]"><span className="h-px flex-1 bg-[#eaecf0]" />OR<span className="h-px flex-1 bg-[#eaecf0]" /></div>
+      <OAuthButtons />
     </AuthShell>
   );
 }

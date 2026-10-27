@@ -172,6 +172,12 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
               Try again
             </Button>
           </div>
+        ) : owner && !owner.email_verified ? (
+          <div className="max-w-xl rounded-2xl border border-[#fedf89] bg-white p-8" role="alert">
+            <h1 className="text-xl font-semibold text-[#182230]">Verify your email to continue</h1>
+            <p className="mt-2 text-sm leading-6 text-[#667085]">Your private workspace is available after email verification.</p>
+            <Link href={`/verify-email?${new URLSearchParams({ email: owner.email }).toString()}`} className="mt-6 inline-flex min-h-10 items-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white">Verify email</Link>
+          </div>
         ) : owner ? (
           <>
             {children}

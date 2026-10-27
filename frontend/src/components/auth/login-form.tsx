@@ -8,9 +8,10 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { FormField } from "@/components/auth/form-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { loginOwner } from "@/features/auth/service";
+import { AuthApiError, loginOwner } from "@/features/auth/service";
 import { validateLoginInput } from "@/features/auth/schema";
 import type { FieldErrors, LoginInput } from "@/features/auth/types";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
 
 export function LoginForm() {
   const router = useRouter();
@@ -38,6 +39,11 @@ export function LoginForm() {
       router.replace("/dashboard");
       router.refresh();
     } catch (error) {
+      if (error instanceof AuthApiError && error.status === 403) {
+        const query = new URLSearchParams({ email: input.email });
+        router.push(`/verify-email?${query.toString()}`);
+        return;
+      }
       setApiError(
         error instanceof Error
           ? error.message
@@ -123,6 +129,9 @@ export function LoginForm() {
           ) : null}
         </Button>
       </form>
+
+      <div className="my-6 flex items-center gap-3 text-xs font-medium text-[#98a2b3]"><span className="h-px flex-1 bg-[#eaecf0]" />OR<span className="h-px flex-1 bg-[#eaecf0]" /></div>
+      <OAuthButtons />
 
       <p className="mt-7 text-center text-sm text-[#667085]">
         Don’t have an account?{" "}

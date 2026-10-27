@@ -1,7 +1,9 @@
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-from sqlalchemy import String
+from datetime import datetime
+
+from sqlalchemy import DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -33,6 +35,7 @@ class User(TimestampMixin, Base):
     password_hash: Mapped[str] = mapped_column(
         String(255), nullable=False
     )
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     clients: Mapped[list["Client"]] = relationship(
         back_populates="owner",
@@ -43,3 +46,7 @@ class User(TimestampMixin, Base):
         back_populates="owner",
         cascade="all, delete-orphan",
     )
+
+    @property
+    def email_verified(self) -> bool:
+        return self.email_verified_at is not None
