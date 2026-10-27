@@ -111,7 +111,7 @@ export function ClientProjectList({ clientId }: { clientId: string }) {
         </ul>
       )}
       <p className="mt-4 text-xs leading-5 text-[#98a2b3]">
-        Task management is not available yet.
+        Open a project to review its delivery tasks and update progress.
       </p>
     </section>
   );

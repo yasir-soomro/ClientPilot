@@ -11,6 +11,7 @@ import {
 } from "react";
 import { FormField } from "@/components/auth/form-field";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { TaskManagement } from "@/components/tasks/task-management";
 import { ApiError } from "@/features/api/client";
@@ -85,6 +86,8 @@ export function ProjectManagement({
   const [updateSuccess, setUpdateSuccess] = useState("");
   const [creating, setCreating] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const detailRequest = useRef(0);
 
   const handleApiError = useCallback(
@@ -224,6 +227,7 @@ export function ProjectManagement({
       form.reset();
       setCreateErrors({});
       setCreateSuccess(`${project.name} was created.`);
+      setCreateOpen(false);
       await refreshProjects();
       await selectProject(project.id);
     } catch (error) {
@@ -256,6 +260,7 @@ export function ProjectManagement({
       setSelectedProject(project);
       setUpdateErrors({});
       setUpdateSuccess("Project details were saved.");
+      setEditOpen(false);
       await refreshProjects();
     } catch (error) {
       setUpdateError(handleApiError(error));
@@ -272,7 +277,7 @@ export function ProjectManagement({
   return (
     <section aria-labelledby="projects-heading" className="mt-0">
       <div className="mb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-indigo-600">Workspace</p>
+        <p className="cp-eyebrow">Workspace</p>
         <h2
           id="projects-heading"
           className="mt-2 text-3xl font-bold tracking-[-0.045em] text-[#182230]"
@@ -315,6 +320,9 @@ export function ProjectManagement({
               </Link>
             </p>
           ) : (
+            <>
+            <button type="button" onClick={() => setCreateOpen(true)} className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">+ New project</button>
+            <Dialog open={createOpen} title="Create a project" description="Link the project to one of your owner-scoped clients." onClose={() => setCreateOpen(false)}>
             <form className="mt-5 space-y-4" onSubmit={handleCreate} noValidate>
               {createError ? (
                 <p role="alert" className="text-sm leading-5 text-[#b42318]">
@@ -417,17 +425,14 @@ export function ProjectManagement({
               </FormField>
               <Button loading={creating}>Create project</Button>
             </form>
+            </Dialog>
+            </>
           )}
         </section>
 
         <section className="cp-card p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
-            <h3 className="text-lg font-semibold text-[#182230]">
-              Your projects
-            </h3>
-            <span className="text-sm text-[#667085]">
-              {projects.length} {projects.length === 1 ? "project" : "projects"}
-            </span>
+          <div><h3 className="text-lg font-semibold text-[#182230]">Your projects</h3><p className="mt-1 text-sm text-[#667085]">{projects.length} {projects.length === 1 ? "project" : "projects"} in your workspace</p></div>
           </div>
           {loading ? (
             <p role="status" className="mt-5 text-sm text-[#667085]">
@@ -525,15 +530,15 @@ export function ProjectManagement({
                 </div>
               </dl>
 
-              <form
-                key={`${selectedProject.id}-${selectedProject.updated_at}`}
-                className="space-y-4"
-                onSubmit={handleUpdate}
-                noValidate
-              >
-                <h4 className="font-semibold text-[#182230]">
-                  Update project
-                </h4>
+              <div className="lg:col-span-1">
+                <div className="flex items-center justify-between gap-3"><div><h4 className="font-semibold text-[#182230]">{selectedProject.name}</h4><p className="mt-1 text-sm capitalize text-[#667085]">{statusLabel(selectedProject.status)} · {selectedProject.due_date ? `Due ${selectedProject.due_date}` : "No due date"}</p></div><button type="button" onClick={() => setEditOpen(true)} className="min-h-10 rounded-xl border border-[#dfe2ea] bg-white px-4 text-sm font-semibold text-[#344054] transition hover:border-indigo-200 hover:bg-indigo-50/40">Edit</button></div>
+                <Dialog open={editOpen} title="Edit project" description="Update the project details and delivery status." onClose={() => setEditOpen(false)}>
+                <form
+                  key={`${selectedProject.id}-${selectedProject.updated_at}`}
+                  className="space-y-4"
+                  onSubmit={handleUpdate}
+                  noValidate
+                >
                 {updateError ? (
                   <p role="alert" className="text-sm leading-5 text-[#b42318]">
                     {updateError}
@@ -629,7 +634,9 @@ export function ProjectManagement({
                   />
                 </FormField>
                 <Button loading={updating}>Save changes</Button>
-              </form>
+                </form>
+                </Dialog>
+              </div>
               <TaskManagement projectId={selectedProject.id} />
             </div>
           ) : null}

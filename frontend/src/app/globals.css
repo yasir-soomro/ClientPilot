@@ -2,10 +2,10 @@
 
 :root {
   color-scheme: light;
-  --background: #f6f7fb;
-  --foreground: #182230;
+  --background: #f7f8fc;
+  --foreground: #172033;
   --muted: #667085;
-  --primary: #4f46e5;
+  --primary: #5146e5;
   --primary-dark: #4338ca;
   --border: #e7e9f0;
   --surface: #ffffff;
@@ -27,9 +27,28 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 .cp-card {
   border: 1px solid var(--border);
-  border-radius: 1rem;
+  border-radius: 1.125rem;
   background: var(--surface);
-  box-shadow: 0 2px 8px rgb(16 24 40 / 2.5%);
+  box-shadow: 0 2px 8px rgb(16 24 40 / 3%), 0 12px 32px rgb(16 24 40 / 2%);
+}
+
+.cp-eyebrow {
+  color: var(--primary);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.cp-skeleton {
+  background: linear-gradient(90deg, #f1f2f6 25%, #fafbfc 37%, #f1f2f6 63%);
+  background-size: 400% 100%;
+  animation: cp-shimmer 1.4s ease infinite;
+}
+
+@keyframes cp-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -37,4 +56,56 @@ button, a { -webkit-tap-highlight-color: transparent; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+
+
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes clientpilot-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes clientpilot-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-fade-up {
+  animation: clientpilot-fade-up 750ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-float {
+  animation: clientpilot-float 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

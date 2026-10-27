@@ -24,7 +24,9 @@ Before implementing authentication or private data operations, document and appr
 
 | Decision | Status |
 |---|---|
-| Owner email/password registration, authentication, secure logout behavior, and cookie handling | Decided for Owner/client slice; see [specification](./specification.md#16-owner-and-client-decisions) |
+| Existing email/password registration fields, password hashing, opaque sessions, secure logout, and cookie handling | Decided; preserve the current contract in specification section 16 |
+| CD-001 public landing content/navigation and CD-002 email OTP, Google/GitHub sign-in, safe account linking, and verification gate | Approved V1 requirements recorded in specification section 16.2; implementation details require the authentication LLD/API decisions in section 17.1 |
+| Phone-number collection versus verification | Email/password registration continues to collect a required E.164 number; phone verification/SMS is excluded. Social-onboarding collection is unresolved; see specification section 17.1 |
 | Preventing duplicate clients within one Owner's workspace | Decided: non-null normalized email match OR normalized name-and-non-null-company match; owner-scoped; duplicate writes return `409`; see [specification](./specification.md#16-owner-and-client-decisions) |
 | Client email/company optionality, validation, UUID identifiers, UTC timestamps, and allowed update fields | Decided for client slice; see [specification](./specification.md#16-owner-and-client-decisions) |
 | Initial API routes, request/response formats, validation errors, and status mapping | Decided for Owner/client slice; see [specification](./specification.md#16-owner-and-client-decisions) |
@@ -33,11 +35,11 @@ Before implementing authentication or private data operations, document and appr
 | Project statuses, default, active definition, transitions, update fields, name validation, date-only due dates, list behavior, and API errors | Decided for Projects in specification section 8.3 |
 | Project-list pagination, sorting, and filtering | Deferred; projects are unpaginated and newest-first |
 | Task fields, date-only due dates, status-only updates, and allowed status transitions | Decided in specification section 9.2 |
-| Deadline window, time-zone handling, and overdue grouping/display | Dashboard implementation |
+| Deadline window, time-zone handling, overdue grouping/display, and dashboard API | Must be decided before dashboard implementation; see specification section 17.2 |
 | SQLite setup and Alembic migration approach; backup/deployment details when required by the delivery environment | SQLite/Alembic setup implemented; backup/deployment deferred |
 | Delete/archive policy | Any deletion/archive work; permanent deletion remains excluded from V1 |
 
-The implementation plan does not prescribe behavior for the remaining dashboard decisions where the specification leaves it open.
+The plan does not prescribe behavior for the remaining authentication or dashboard decisions. Resolve each in the specification/LLD before implementing the milestone that depends on it. Existing client, project, task, and session decisions remain settled.
 
 ## 3. Milestones
 
@@ -45,7 +47,7 @@ The implementation plan does not prescribe behavior for the remaining dashboard 
 
 **Goal:** Make the first implementation slice sufficiently specified.
 
-**Status:** Owner/client and Project requirements are documented and implemented. Task requirements are now documented in specification section 9; dashboard deadline decisions remain open.
+**Status:** The original Owner/client and Project requirements are documented and implemented. Task decisions are complete and task API/frontend work is present; task test execution and dashboard deadline decisions remain outstanding. Approved CD-001/CD-002 requirements are recorded in specification section 16.2; their authentication design is a new prerequisite, not a reopening of the original session or client/project/task decisions.
 
 **Completed work:**
 
@@ -210,9 +212,38 @@ The implementation plan does not prescribe behavior for the remaining dashboard 
 - Zero-task progress and projects with mixed task statuses.
 - Upcoming, overdue, and time-zone boundary behavior according to the approved rules.
 
+### Milestone 4A — Approved public-experience and authentication updates (CD-001/CD-002)
+
+**Prerequisite:** Complete T01.10 and approve the authentication LLD/API details in specification section 17.1. Existing session-cookie, phone collection for email/password registration, and client/project/task contracts remain as already decided.
+
+**Goal:** Implement the approved public landing experience and add email verification and federated Owner sign-in without weakening private API ownership checks.
+
+**Work:**
+
+- Add email OTP verification for email/password registration, with the approved expiry, resend, attempt, storage, and delivery policies.
+- Add server-validated Google/GitHub sign-in using stable provider identities, the verified-email gate, and explicit safe account linking.
+- Require both a valid session and required verified-email state for private APIs; ensure the workspace UI does not render private data before identity verification.
+- Complete the single-page landing sections and authentication-aware navigation in specification section 16.2.
+
+**Acceptance criteria:**
+
+- Unverified email/password accounts cannot access any private route data or API.
+- Verified provider email satisfies verification; an unverified provider email requires ClientPilot OTP.
+- Matching email addresses never auto-link accounts; explicit linking follows section 16.2.
+- Existing session revocation, cookie flags, and owner-scoping behavior remain intact.
+- Public landing navigation/content is responsive, and public previews contain no real Owner data.
+
+**Tests:**
+
+- OTP valid/invalid/expired/replayed codes, resend/attempt limits, delivery errors, and no access before verification.
+- Provider identity validation, verified/unverified email paths, callbacks, safe redirects, and existing provider login.
+- Safe account linking and rejection of automatic or duplicate linking.
+- Direct private-route and API access before login and before email verification; cross-owner API checks.
+- Public navigation state and regression tests for current email/password, client, project, and task flows.
+
 ### Milestone 5 — V1 integration and release verification
 
-**Prerequisite:** Milestones 1–4 are complete and the remaining V1 decisions needed for release are recorded.
+**Prerequisite:** Milestones 1–4 and 4A are complete and the remaining V1 decisions needed for release are recorded.
 
 **Goal:** Verify end-to-end V1 behavior and close documented gaps without expanding scope.
 
@@ -229,7 +260,7 @@ The implementation plan does not prescribe behavior for the remaining dashboard 
 
 - The V1 completion checklist in the specification is satisfied or each remaining item is explicitly documented as incomplete.
 - Automated tests cover successful flows, validation failures, missing records, authentication failures, and cross-owner access.
-- No client portal, marketplace, payments, AI features, teams, permanent deletion, or other excluded capability has been introduced. Public email/password Owner registration is an approved V1 feature.
+- No client portal, marketplace, payments, AI features, teams, permanent deletion, or other excluded capability has been introduced. The approved V1 public experience and email/password, Google, and GitHub Owner sign-in rules are implemented.
 - The approved API error contract and setup instructions match the implementation.
 - All relevant tests pass; failures and tests not run are reported accurately.
 

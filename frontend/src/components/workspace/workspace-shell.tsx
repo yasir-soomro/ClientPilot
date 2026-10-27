@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { BriefcaseBusiness, LayoutDashboard, LogOut, Users } from "lucide-react";
+import { BriefcaseBusiness, LayoutDashboard, LogOut, Plus, Users } from "lucide-react";
 import { AuthApiError, getCurrentOwner, logoutOwner } from "@/features/auth/service";
 import type { Owner } from "@/features/auth/types";
 import { Button } from "@/components/ui/button";
@@ -81,14 +81,17 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <main className="min-h-screen bg-[#f6f7fb] lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
+    <main className="min-h-screen bg-[#f7f8fc] lg:grid lg:grid-cols-[256px_minmax(0,1fr)]">
       <aside className="border-b border-[#e7e9f0] bg-white lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
         <div className="flex h-full flex-col px-4 py-5 sm:px-6 lg:px-5">
           <Link href="/dashboard" className="flex items-center gap-3 px-2">
             <BrandMark />
             <span className="text-[15px] font-bold tracking-[-0.02em] text-[#182230]">ClientPilot</span>
           </Link>
-          <p className="mb-3 mt-9 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#98a2b3]">Workspace</p>
+          <Link href="/projects" className="mt-8 flex min-h-10 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(79,70,229,0.2)] transition hover:-translate-y-0.5 hover:bg-indigo-700 lg:mt-9">
+            <Plus size={16} aria-hidden="true" /> New project
+          </Link>
+          <p className="mb-3 mt-8 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#98a2b3]">Workspace</p>
           <nav aria-label="Workspace" className="flex gap-1 overflow-x-auto lg:flex-col">
             {navigation.map(({ href, label }) => {
               const Icon = navigation.find((item) => item.href === href)?.icon ?? LayoutDashboard;
@@ -133,14 +136,14 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="min-w-0">
-      <header className="flex h-[68px] items-center justify-between border-b border-[#e7e9f0] bg-white/90 px-5 sm:px-8 lg:px-10">
-        <p className="text-sm font-medium text-[#667085]">Private workspace <span className="mx-2 text-[#d0d5dd]">/</span><span className="text-[#344054]">{navigation.find((item) => item.href === (pathname.startsWith("/clients") ? "/clients" : pathname.startsWith("/projects") ? "/projects" : "/dashboard"))?.label}</span></p>
+      <header className="sticky top-0 z-20 flex h-[72px] items-center justify-between border-b border-[#e7e9f0] bg-white/90 px-5 backdrop-blur-xl sm:px-8 lg:px-10">
+        <div><p className="text-xs font-medium text-[#98a2b3]">Private workspace</p><p className="mt-0.5 text-sm font-semibold text-[#344054]">{navigation.find((item) => item.href === (pathname.startsWith("/clients") ? "/clients" : pathname.startsWith("/projects") ? "/projects" : "/dashboard"))?.label}</p></div>
         <div className="flex items-center gap-3 lg:hidden">
           {owner ? <span className="flex size-8 items-center justify-center rounded-full bg-indigo-50 text-xs font-bold text-indigo-700">{(owner.full_name ?? owner.email).slice(0, 1).toUpperCase()}</span> : null}
           <button type="button" onClick={handleLogout} disabled={signingOut || !owner} aria-label="Sign out" className="rounded-lg p-2 text-[#667085] hover:bg-[#f6f7fb] disabled:opacity-60"><LogOut size={17} /></button>
         </div>
       </header>
-      <section className="mx-auto w-full max-w-[1440px] px-5 py-8 sm:px-8 sm:py-10 lg:px-10">
+      <section className="mx-auto w-full max-w-[1440px] px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
         {loading ? (
           <div
             className="rounded-2xl border border-[#eaecf0] bg-white p-8 text-sm text-[#667085]"

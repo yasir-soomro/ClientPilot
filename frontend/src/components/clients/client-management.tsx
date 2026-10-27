@@ -9,6 +9,8 @@ import {
   type FormEvent,
 } from "react";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
+import { Search, UserRound } from "lucide-react";
 import { ClientProjectList } from "@/components/clients/client-project-list";
 import { FormField } from "@/components/auth/form-field";
 import { Input } from "@/components/ui/input";
@@ -72,6 +74,9 @@ export function ClientManagement({
   const [updateSuccess, setUpdateSuccess] = useState("");
   const [creating, setCreating] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [search, setSearch] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const detailRequest = useRef(0);
 
   const handleApiError = useCallback(
@@ -196,6 +201,7 @@ export function ClientManagement({
       form.reset();
       setCreateErrors({});
       setCreateSuccess(`${client.name} was added.`);
+      setCreateOpen(false);
       await refreshClients();
       await selectClient(client.id);
     } catch (error) {
@@ -229,6 +235,7 @@ export function ClientManagement({
       setSelectedClient(client);
       setUpdateErrors({});
       setUpdateSuccess("Client details were saved.");
+      setEditOpen(false);
       await refreshClients();
     } catch (error) {
       setUpdateError(handleApiError(error));
@@ -237,10 +244,15 @@ export function ClientManagement({
     }
   }
 
+  const filteredClients = clients.filter((client) => {
+    const query = search.trim().toLowerCase();
+    return !query || [client.name, client.email ?? "", client.company ?? ""].some((value) => value.toLowerCase().includes(query));
+  });
+
   return (
     <section aria-labelledby="clients-heading" className="mt-0">
       <div className="mb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-indigo-600">Workspace</p>
+        <p className="cp-eyebrow">Workspace</p>
         <h2
           id="clients-heading"
           className="mt-2 text-3xl font-bold tracking-[-0.045em] text-[#182230]"
@@ -254,7 +266,9 @@ export function ClientManagement({
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <section className="cp-card p-5 sm:p-6">
-          <h3 className="text-lg font-semibold text-[#182230]">Add a client</h3>
+          <div className="flex items-start gap-3"><span className="flex size-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600"><UserRound size={18} /></span><div><h3 className="text-lg font-semibold text-[#182230]">Add a client</h3><p className="mt-1 text-sm text-[#667085]">Keep their details close to the work.</p></div></div>
+          <button type="button" onClick={() => setCreateOpen(true)} className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">+ Add client</button>
+          <Dialog open={createOpen} title="Add a client" description="Create an owner-scoped client record." onClose={() => setCreateOpen(false)}>
           <form className="mt-5 space-y-4" onSubmit={handleCreate} noValidate>
             {createError ? (
               <p role="alert" className="text-sm leading-5 text-[#b42318]">
@@ -322,17 +336,12 @@ export function ClientManagement({
             </FormField>
             <Button loading={creating}>Add client</Button>
           </form>
+          </Dialog>
         </section>
 
         <section className="cp-card p-5 sm:p-6">
-          <div className="flex items-center justify-between gap-4">
-            <h3 className="text-lg font-semibold text-[#182230]">
-              Your clients
-            </h3>
-            <span className="text-sm text-[#667085]">
-              {clients.length} {clients.length === 1 ? "client" : "clients"}
-            </span>
-          </div>
+          <div className="flex items-center justify-between gap-4"><div><h3 className="text-lg font-semibold text-[#182230]">Your clients</h3><p className="mt-1 text-sm text-[#667085]">{clients.length} {clients.length === 1 ? "client" : "clients"} in your workspace</p></div></div>
+          <label className="relative mt-5 block"><span className="sr-only">Search clients</span><Search size={17} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98a2b3]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by name, company, or email" className="h-11 w-full rounded-xl border border-[#dfe2ea] bg-[#fafbfc] pl-10 pr-4 text-sm outline-none transition placeholder:text-[#98a2b3] focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10" /></label>
           {loading ? (
             <p role="status" className="mt-5 text-sm text-[#667085]">
               Loading clients…
@@ -352,9 +361,11 @@ export function ClientManagement({
             <p className="mt-5 rounded-xl bg-[#f7f8fc] p-4 text-sm leading-6 text-[#667085]">
               No clients yet. Add your first client using the form.
             </p>
+          ) : filteredClients.length === 0 ? (
+            <p className="mt-5 rounded-xl border border-dashed border-[#dfe2ea] bg-[#fafbfc] p-6 text-center text-sm leading-6 text-[#667085]">No clients match “{search}”.</p>
           ) : (
             <ul className="mt-4 divide-y divide-[#eaecf0]">
-              {clients.map((client) => (
+              {filteredClients.map((client) => (
                 <li key={client.id}>
                   <button
                     type="button"
@@ -414,13 +425,15 @@ export function ClientManagement({
                 </div>
               </dl>
 
-              <form
-                key={`${selectedClient.id}-${selectedClient.updated_at}`}
-                className="space-y-4"
-                onSubmit={handleUpdate}
-                noValidate
-              >
-                <h4 className="font-semibold text-[#182230]">Update client</h4>
+              <div>
+                <div className="flex items-center justify-between gap-3"><div><h4 className="font-semibold text-[#182230]">{selectedClient.name}</h4><p className="mt-1 text-sm text-[#667085]">{selectedClient.company ?? selectedClient.email ?? "No contact details"}</p></div><button type="button" onClick={() => setEditOpen(true)} className="min-h-10 rounded-xl border border-[#dfe2ea] bg-white px-4 text-sm font-semibold text-[#344054] transition hover:border-indigo-200 hover:bg-indigo-50/40">Edit</button></div>
+                <Dialog open={editOpen} title="Edit client" description="Update this client's details." onClose={() => setEditOpen(false)}>
+                <form
+                  key={`${selectedClient.id}-${selectedClient.updated_at}`}
+                  className="space-y-4"
+                  onSubmit={handleUpdate}
+                  noValidate
+                >
                 {updateError ? (
                   <p role="alert" className="text-sm leading-5 text-[#b42318]">
                     {updateError}
@@ -486,7 +499,9 @@ export function ClientManagement({
                   />
                 </FormField>
                 <Button loading={updating}>Save changes</Button>
-              </form>
+                </form>
+                </Dialog>
+              </div>
             </div>
           ) : null}
         </section>

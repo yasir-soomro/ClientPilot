@@ -5,6 +5,7 @@ import { CalendarDays, CheckCircle2, Circle } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { FormField } from "@/components/auth/form-field";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ApiError } from "@/features/api/client";
 import { createTask, listTasks, updateTaskStatus } from "@/features/tasks/service";
@@ -26,6 +27,7 @@ export function TaskManagement({ projectId }: { projectId: string }) {
   const [creating, setCreating] = useState(false);
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
   const [statusError, setStatusError] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
 
   const handleError = useCallback((error: unknown): string => {
     if (error instanceof ApiError && error.status === 401) {
@@ -89,6 +91,7 @@ export function TaskManagement({ projectId }: { projectId: string }) {
       form.reset();
       setFieldErrors({});
       setSuccess(`${task.title} was created.`);
+      setCreateOpen(false);
       await refreshTasks();
     } catch (error) {
       setFormError(handleError(error));
@@ -120,6 +123,8 @@ export function TaskManagement({ projectId }: { projectId: string }) {
         <span className="rounded-full bg-[#f3f4f8] px-2.5 py-1 text-xs font-semibold text-[#667085]">{tasks.length} {tasks.length === 1 ? "task" : "tasks"}</span>
       </div>
 
+      <button type="button" onClick={() => setCreateOpen(true)} className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">+ Add task</button>
+      <Dialog open={createOpen} title="Add a task" description="Add the next actionable step for this project." onClose={() => setCreateOpen(false)}>
       <form className="grid gap-4 rounded-2xl border border-[#e7e9f0] bg-[#fafbfc] p-4 sm:p-5 md:grid-cols-2" onSubmit={handleCreate} noValidate>
         <div className="md:col-span-2">
           <FormField id="new-task-title" label="Task title" error={fieldErrors.title}>
@@ -138,6 +143,7 @@ export function TaskManagement({ projectId }: { projectId: string }) {
           <Button loading={creating} className="md:w-auto">Create task</Button>
         </div>
       </form>
+      </Dialog>
 
       {loading ? (
         <p role="status" className="mt-4 text-sm text-[#667085]">Loading tasks…</p>
@@ -150,7 +156,11 @@ export function TaskManagement({ projectId }: { projectId: string }) {
         <p className="mt-4 rounded-xl bg-[#f7f8fc] p-4 text-sm text-[#667085]">No tasks yet. Add the first task for this project.</p>
       ) : (
         <ul className="mt-4 divide-y divide-[#eaecf0] rounded-xl border border-[#eaecf0] bg-white px-4">
-          {tasks.map((task) => (
+          {[...tasks].sort((a, b) => {
+            if (a.status === "done" && b.status !== "done") return 1;
+            if (a.status !== "done" && b.status === "done") return -1;
+            return (a.due_date ?? "9999-12-31").localeCompare(b.due_date ?? "9999-12-31");
+          }).map((task) => (
             <li key={task.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex min-w-0 gap-3">
                 <span className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg ${task.status === "done" ? "bg-emerald-50 text-emerald-600" : "bg-indigo-50 text-indigo-600"}`} aria-hidden="true">
@@ -158,7 +168,7 @@ export function TaskManagement({ projectId }: { projectId: string }) {
                 </span>
                 <div className="min-w-0"><p className="font-medium text-[#182230]">{task.title}</p>
                 {task.description ? <p className="mt-1 whitespace-pre-wrap text-sm leading-5 text-[#667085]">{task.description}</p> : null}
-                {task.due_date ? <p className="mt-2 flex items-center gap-1.5 text-xs text-[#667085]"><CalendarDays aria-hidden="true" size={13} />Due {task.due_date}</p> : null}</div>
+                {task.due_date ? <p className={`mt-2 flex items-center gap-1.5 text-xs ${task.status !== "done" && task.due_date < new Date().toISOString().slice(0, 10) ? "font-semibold text-rose-600" : "text-[#667085]"}`}><CalendarDays aria-hidden="true" size={13} />{task.status !== "done" && task.due_date < new Date().toISOString().slice(0, 10) ? "Overdue" : "Due"} {task.due_date}</p> : null}</div>
               </div>
               <label className="flex shrink-0 items-center gap-2 text-sm text-[#667085]">
                 <span className="sr-only">Status for {task.title}</span>

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { summarizeWorkspace } from "../src/features/dashboard/summary.ts";
+import { summarizeTasks, summarizeWorkspace } from "../src/features/dashboard/summary.ts";
 
 const client = {
   id: "client-1",
@@ -36,4 +36,20 @@ test("workspace summary counts API records and only in-progress active projects"
       activeProjects: 1,
     },
   );
+});
+
+test("task summary counts pending and overdue work and calculates project progress", () => {
+  const projects = [project("project-1", "in_progress")];
+  const tasks = [
+    { id: "task-1", project_id: "project-1", title: "Overdue", description: null, due_date: "2026-10-26", status: "todo", created_at: "2026-10-25T12:00:00Z", updated_at: "2026-10-25T12:00:00Z" },
+    { id: "task-2", project_id: "project-1", title: "Upcoming", description: null, due_date: "2026-11-01", status: "in_progress", created_at: "2026-10-25T12:00:00Z", updated_at: "2026-10-25T12:00:00Z" },
+    { id: "task-3", project_id: "project-1", title: "Done", description: null, due_date: null, status: "done", created_at: "2026-10-25T12:00:00Z", updated_at: "2026-10-25T12:00:00Z" },
+  ];
+
+  const summary = summarizeTasks(tasks, projects);
+  assert.equal(summary.pendingTasks, 2);
+  assert.equal(summary.overdueTasks, 1);
+  assert.deepEqual(summary.statusCounts, { todo: 1, in_progress: 1, done: 1 });
+  assert.equal(summary.projectProgress[0].progress, 33);
+  assert.equal(summary.upcomingTasks[0].id, "task-2");
 });

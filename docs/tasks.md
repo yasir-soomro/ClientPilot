@@ -7,7 +7,7 @@ This task list turns the staged implementation plan into actionable work items. 
 ## Milestone 0 — Requirements and design
 
 - [x] **T00.1 — Decide registration and authentication**
-  Document Owner registration, authentication, secure logout behavior, and cookie/token handling.
+  Original email/password registration fields, authentication, secure logout behavior, and cookie/session handling are decided in specification section 16. New approved CD-001/CD-002 requirements are tracked separately below and do not reopen the existing session or profile decisions.
 
 - [x] **T00.2 — Define API and error contract**
   Document initial API routes, methods, request/response shapes, error schema, status mapping, and how missing records are distinguished from inaccessible records.
@@ -58,6 +58,28 @@ This task list turns the staged implementation plan into actionable work items. 
 - [x] **T01.9 — Add authentication frontend**
   Provide responsive Owner registration and login pages connected to the existing API, with client-side validation, loading and error/success states, session-cookie login, and redirect to an authenticated workspace landing page.
 
+## Milestone 1 follow-on — Approved public experience and authentication changes
+
+**Scope:** Approved CD-001/CD-002 requirements recorded in specification section 16.2. Preserve the settled email/password profile and session rules; details still requiring design approval are listed in specification section 17.1.
+
+- [ ] **T01.10 — Finalize authentication LLD and API contract**
+  Decide OTP format/lifetime/throttling/attempt and delivery behavior; registration/verification responses; social first-login provisioning/profile requirements; provider callback/redirect controls; account recovery; and verification/provider identity storage. Preserve required E.164 phone collection for email/password registration and keep phone verification/SMS out of scope. Do not reopen client/project/task or existing session-cookie decisions.
+
+- [ ] **T01.11 — Implement email verification and verified-access gate**
+  Require ClientPilot email OTP for email/password accounts. Ensure unverified accounts cannot access private pages or APIs, and issue private-capable sessions only in accordance with the approved LLD.
+
+- [ ] **T01.12 — Implement Google/GitHub sign-in and safe account linking**
+  Validate provider identities server-side, use stable provider IDs, honor provider-verified email, require ClientPilot OTP when verification is absent, and implement explicit authenticated account linking without automatic email-based merges.
+
+- [ ] **T01.13 — Complete public landing sections and authentication-aware navigation**
+  Provide Home, Features, and About in-page sections; public logged-out navigation; signed-in Dashboard/account/logout navigation; responsive content, How It Works, CTA, and footer; use approved hero image and static/sample-only previews.
+
+- [ ] **T01.14 — Test CD-001/CD-002 flows and regressions**
+  Cover OTP and provider verification, callback/linking failures, verified/unverified private access, direct route/API access, owner isolation, navigation states, and regression of existing email/password, client, project, and task behavior.
+
+- [ ] **T01.15 — Align Owner name-length validation with the approved contract**
+  The specification permits a full name up to 255 characters, while the current backend schema limits it to 50. Align frontend/backend validation and boundary tests with the approved specification without changing the other registration fields or rules.
+
 ## Milestone 2 — Projects
 
 **Depends on:** T01.6 and the approved Project contract documented by T02.1.
@@ -78,17 +100,17 @@ This task list turns the staged implementation plan into actionable work items. 
 
 **Depends on:** T02.4 and approved task due-date, editable-field, status-transition, validation, and API rules.
 
-- [ ] **T03.1 — Finalize task decisions**  
+- [x] **T03.1 — Finalize task decisions**
   Document whether tasks have due dates, which fields may be edited, and the permitted transitions between `todo`, `in_progress`, and `done`.
 
-- [ ] **T03.2 — Implement task API**  
+- [x] **T03.2 — Implement task API**
   Implement task create and list/view operations and status updates. Enforce access through the owning project on every operation.
 
-- [ ] **T03.3 — Add task frontend flows**  
+- [x] **T03.3 — Add task frontend flows**
   Add task creation, viewing, and status update flows using the documented API.
 
 - [ ] **T03.4 — Test task validation and ownership**  
-  Cover missing/blank titles, invalid statuses and transitions, missing tasks/projects, cross-owner access, approved due-date behavior, and persistence. Confirm permanent deletion is unavailable.
+  Cover missing/blank titles, invalid statuses and transitions, missing tasks/projects, cross-owner access, approved due-date behavior, and persistence. Confirm permanent deletion is unavailable. Test code is present; this item remains open until the relevant tests are run and reviewed.
 
 ## Milestone 4 — Dashboard and deadlines
 
@@ -108,7 +130,7 @@ This task list turns the staged implementation plan into actionable work items. 
 
 ## Milestone 5 — V1 integration and release verification
 
-**Depends on:** T01.6, T02.4, T03.4, and T04.4
+**Depends on:** T01.6, T01.14, T02.4, T03.4, and T04.4
 
 - [ ] **T05.1 — Run end-to-end and regression tests**  
   Verify Owner login/logout and client, project, task, and dashboard flows across the frontend, API, and database.
@@ -124,4 +146,4 @@ This task list turns the staged implementation plan into actionable work items. 
 
 ## V1 boundaries
 
-Public email/password Owner registration is approved for V1. Do not add a business-client portal, a marketplace, chat, notifications, file uploads, approval/revision workflows, invoices, payments, AI features, teams, complex roles, microservices, queues, caching, or permanent-delete operations without an explicitly approved scope change.
+Public email/password registration with email verification, Google/GitHub Owner sign-in, and the public landing experience are approved V1 requirements. E.164 phone collection remains required for email/password registration; phone verification/SMS OTP is excluded. Do not add a business-client portal, a marketplace, in-app chat/notifications, file uploads, approval/revision workflows, invoices, payments, AI features, teams, complex roles, microservices, queues, caching, or permanent-delete operations without an explicitly approved scope change.

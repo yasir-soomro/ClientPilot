@@ -1,28 +1,28 @@
 # ClientPilot V1 Project Audit
 
 **Audit date:** 2026-10-27  
-**Scope:** Documentation and current frontend, backend, database models/migrations, and tests. This audit is read-only; no existing files or application behavior were changed.  
-**Audit baseline:** Checked-in repository plus the updated `docs/specification.md` supplied with the request. The supplied document is referred to below as the *supplied draft* to distinguish it from the checked-in [specification](docs/specification.md).
+**Scope:** Documentation and current frontend, backend, database models/migrations, and tests. The initial audit was read-only. A later documentation reconciliation incorporated the supplied CD-001/CD-002 requirements into the existing [specification](docs/specification.md); application code, database, migrations, and tests were not changed.
+**Audit baseline:** Checked-in repository and the approved V1 requirements supplied for CD-001/CD-002.
 
 ## Executive summary
 
-ClientPilot is a functioning V1 foundation: owners can register and authenticate with email/password; clients and projects are owner-scoped; tasks can be created and managed inside projects; and records are persisted in SQLite through SQLAlchemy and Alembic. The checked-in README accurately notes that task progress, pending-task metrics, and task deadline views are not yet available.
+ClientPilot is a functioning V1 foundation: owners can register and authenticate with email/password; clients and projects are owner-scoped; tasks can be created and managed inside projects; and records are persisted in SQLite through SQLAlchemy and Alembic. The README accurately notes that task progress, pending-task metrics, and task deadline views are not yet available. The supplied CD-001/CD-002 requirements are now consolidated in section 16.2 of the existing specification; prior client, project, task, and session decisions remain settled.
 
-The supplied draft changes the target considerably. It adds email OTP verification, Google and GitHub sign-in, safe account linking, authentication-aware public navigation, and specific public landing-page sections. Those requirements are not implemented. The draft also refers to an unavailable change-decision record and reopens several decisions that the checked-in specification already records as settled. A requirements/design reconciliation is therefore the safest next task before additional feature code.
+CD-001/CD-002 extend the target with email OTP verification, Google and GitHub sign-in, safe account linking, authentication-aware public navigation, and specific landing-page sections. Those requirements are not implemented. Their approval is treated as authoritative for this audit and is recorded in the existing specification rather than in a duplicate change-decision document. The code-level authentication design and dashboard deadline behavior still need decisions before their implementation phases.
 
 ## 1. Documentation structure and source of truth
 
 The repository has five documents in `docs/`:
 
 - [product-overview.md](docs/product-overview.md) is explicitly a source-derived draft. It says the software specification supersedes it when approved V1 clarifications differ.
-- [specification.md](docs/specification.md) is the detailed feature and API requirements document. Its checked-in version records decisions for owner registration/session handling, clients, projects, and tasks. It is marked “Working draft.”
+- [specification.md](docs/specification.md) is the detailed feature and API requirements document. It records settled owner/session, client, project, and task decisions, plus the approved CD-001/CD-002 amendments. Remaining choices are listed in section 17.
 - [architecture.md](docs/architecture.md) combines HLD and LLD material and is marked “Draft.”
 - [plan.md](docs/plan.md) sequences implementation milestones and is marked “Draft.”
 - [tasks.md](docs/tasks.md) is the milestone checklist.
 
 [README.md](README.md) summarizes current capabilities and setup. [AGENTS.md](AGENTS.md) and [.github/copilot-instructions.md](.github/copilot-instructions.md) set repository workflow and V1 boundaries; they are not feature specifications. No separate ADR, API contract, security design, or standalone LLD document is present. The supplied draft references `docs/change-decisions.md`, but that file is absent both from the repository and the supplied docs folder. The source PDF referenced by `product-overview.md` is also not present in the repository.
 
-**Verified source guidance:** the product overview defers to the specification. **Approval provenance limit:** the supplied draft labels CD-001 and CD-002 approved, but the referenced decision record is not available to check their rationale or approval history. Treat that approval as stated by the supplied draft, not independently verified by repository evidence.
+**Source guidance:** the product overview defers to the specification. The supplied package referenced a separate `change-decisions.md`, but it was not included. To avoid duplicate decision sources, CD-001/CD-002 requirements and rationale are recorded in specification section 16.2.
 
 ## 2. Architecture in beginner-friendly language
 
@@ -59,46 +59,45 @@ In plain terms: the browser sends the task details, the backend checks the signe
 
 ### Not implemented or incomplete
 
-- The supplied draft requires email OTP before private access for email/password accounts. The current implementation registers an account and permits ordinary email/password login without email verification.
-- The supplied draft requires Google and GitHub authentication, provider identity verification, safe account linking, and OTP fallback when provider email verification is unavailable. No provider routes, identity records, OTP models, email-delivery integration, or related tests were found.
-- The current register form requires a phone number, but the supplied draft says phone verification/SMS OTP is not required and does not clearly settle whether collecting the number itself remains required.
+- CD-002 requires email OTP before private access for email/password accounts. The current implementation registers an account and permits ordinary email/password login without email verification.
+- CD-002 requires Google and GitHub authentication, provider identity verification, safe account linking, and OTP fallback when provider email verification is unavailable. No provider routes, identity records, OTP models, email-delivery integration, or related tests were found.
+- The current register form requires an E.164 phone number. The reconciled specification preserves that settled collection requirement for email/password registration and separately excludes phone verification/SMS OTP. Whether social onboarding must collect a phone number when the provider does not supply one remains open.
 - The dashboard currently summarizes clients, projects, and projects with `in_progress` status. It has no pending-task metric, task-derived project progress, or deadline view, and no dashboard API endpoint was found. See [summary.ts](frontend/src/features/dashboard/summary.ts) and [dashboard-overview.tsx](frontend/src/components/workspace/dashboard-overview.tsx).
-- The supplied draft specifies Home/Features/About in-page navigation and logged-in navigation that includes Dashboard and logout controls. The current public page has a hero and feature cards, but no About section or authentication-aware navbar.
-- Workspace components check the current owner client-side, while private APIs enforce authentication on the backend. **Verification gap:** the supplied draft says direct navigation to private routes must not reveal private data. No server-side page gate was found; verify that requirement explicitly, while retaining backend authorization regardless.
+- CD-001 specifies Home/Features/About in-page navigation and signed-in navigation that includes Dashboard and logout controls. The current public page has a hero and feature cards, but no About section or authentication-aware navbar.
+- Workspace components check the current owner client-side and render children only after owner verification; private APIs enforce authentication on the backend. The reconciled requirement clarifies that private APIs must also enforce email verification. The current implementation has no verified-email state, so it cannot satisfy that gate yet.
 
 ## 5. Three most important blockers to V1 completion
 
-1. **No reconciled active requirements baseline.** The supplied draft says implementation is pending and reopens client/project/task decisions that the checked-in specification records as decided and the code already implements. It introduces substantial CD-001/CD-002 scope, but its referenced decision record is unavailable. The checked-in task list also leaves task decision and implementation items unchecked even though task code and tests exist. This makes scope and sequencing unclear.
-2. **Authentication is short of the supplied draft.** Email OTP, Google/GitHub sign-in, provider verification, safe account linking, OTP abuse controls, and related tests are absent. The supplied draft explicitly requires an LLD before those changes, and the repository does not contain one.
-3. **Core user-facing V1 surfaces remain incomplete.** The dashboard lacks pending-task counts, task-based progress, and deadline presentation. Deadline-window, time-zone, and overdue rules remain open in the checked-in specification. The supplied draft’s landing navigation/sections and private-route requirement also do not fully match the current UI/route handling.
+1. **Authentication LLD and implementation remain outstanding.** Email OTP, Google/GitHub sign-in, provider verification, safe account linking, OTP abuse controls, and related tests are absent. The reconciled specification lists unresolved protocol/provider choices that must be completed in the LLD before implementation.
+2. **Dashboard work and its requirements remain incomplete.** The dashboard lacks pending-task counts, task-based project progress, and deadline presentation. Deadline window, time-zone, overdue, and dashboard API rules remain open.
+3. **Public experience and authentication-aware navigation remain incomplete.** The current landing page lacks the approved Home/Features/About in-page navigation, How It Works content, and signed-in navbar state. Private data APIs are protected, but the new verified-email authorization gate is not implemented.
 
 ## 6. One recommended next task
 
-### Task: Finalize and approve the V1 authentication design before coding it
+### Task: T01.10 — Finalize the authentication LLD and API contract
 
 **Constraints**
 
 - Do not start authentication implementation until the active specification and LLD agree.
 - Preserve current client, project, and task behavior unless an approved decision explicitly changes it.
 - Keep ownership authorization on the backend; frontend navigation and redirects are not security controls.
-- Resolve whether phone numbers remain collected at registration, separately from the explicit decision not to require phone verification.
+- Preserve required E.164 phone collection for email/password registration and the explicit exclusion of phone verification/SMS OTP. Decide only whether social onboarding needs a phone number if the provider does not supply one.
 
 **Deliverables**
 
-- A repository decision record for CD-001/CD-002 with approval status, rationale, and superseded decisions.
-- An authentication LLD covering email OTP, Google/GitHub identity verification, account linking, sessions, email delivery, recovery, and private-route behavior.
-- Reconciled specification and plan/task entries that agree with the checked-in implementation and approved new scope.
+- An authentication LLD/API contract covering email OTP, Google/GitHub identity verification, account linking, existing sessions, email delivery, recovery, and private-route behavior.
+- Implementation plan and task entries sequenced against the reconciled specification. CD-001/CD-002 are recorded in specification section 16.2; do not create a duplicate decision document.
 
 **Acceptance criteria**
 
-- One active V1 requirements baseline is identifiable from the repository.
 - OTP expiry, resend and attempt controls, provider identity rules, account linking, and session behavior are concrete and testable.
-- Registration fields and verification requirements are unambiguous.
+- Email/password fields are unambiguous; social-onboarding phone collection remains an explicit open decision and is recorded before auth implementation.
 - Private route and API access criteria explicitly require authentication and, where specified, verified email; backend ownership checks remain mandatory.
 - Existing and newly required test scenarios are listed before implementation begins.
 
 ## 7. Audit limits
 
 - This report is based on documentation and source inspection; automated tests were not run.
-- CD-001/CD-002 approval is stated in the supplied draft but could not be checked against its referenced decision record.
+- CD-001/CD-002 are treated as approved requirements as directed; their requirements and rationale are now recorded in the existing specification.
+- Static inspection found a potential full-name validation mismatch: the approved specification allows up to 255 characters, while the current backend registration schema limits names to 50. This audit did not change code; implementation must be aligned with the approved rule in a future code task.
 - “Implemented” means code paths and tests were found, not that production behavior or all tests were independently verified during this audit.

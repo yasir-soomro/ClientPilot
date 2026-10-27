@@ -4,25 +4,26 @@
 |---|---|
 | Product | ClientPilot |
 | Version | V1 |
-| Status | Working draft — Owner/client baseline implemented; later feature decisions remain open |
-| Product baseline | `ClientPilot_V1_Product_Overview_and_User_Guide.pdf` |
+| Status | Approved V1 requirements baseline, including CD-001 and CD-002; implementation is in progress and unresolved design details are listed in section 17 |
+| Product baseline | Source-derived overview; approved V1 clarifications in this specification supersede it |
 | Initial technology direction | Next.js frontend + FastAPI backend + SQLite database |
 
 ## 1. Purpose
-ClientPilot V1 is a private workspace for a freelancer or small-agency owner to organize existing clients, their projects, project tasks, deadlines, and delivery progress in one place.
+ClientPilot V1 has a public single-page landing experience and a private workspace for a freelancer or small-agency Owner to organize existing clients, their projects, project tasks, deadlines, and delivery progress in one place.
 
 ClientPilot V1 does not find clients, run a client/provider marketplace, or give business clients their own accounts. A business client is a contact record managed by the Owner.
 
 ## 2. Goals and Success Criteria
 V1 should allow its Owner to:
-1. Register multiple Owner accounts with unique email addresses and log in/out securely.
-2. Use a private workspace where each Owner can access only their own data.
-3. Create, list, view, and update multiple client records without duplicates within that Owner's workspace.
-4. Create, list, view, and update projects linked to their own clients.
-5. Create and view tasks within accessible projects and update task status.
-6. See dashboard counts, task-based progress, pending tasks, and deadlines.
-7. Close and restart the application without losing saved records.
-8. Be prevented from accessing another Owner's private records, including by guessing record IDs.
+1. Explore the public landing page without signing in; register or sign in as an Owner using an approved V1 method and log out securely.
+2. Verify email ownership when required by the selected sign-in method.
+3. Use a private workspace only after authentication and required email verification; each Owner can access only their own data.
+4. Create, list, view, and update multiple client records without duplicates within that Owner's workspace.
+5. Create, list, view, and update projects linked to their own clients.
+6. Create and view tasks within accessible projects and update task status.
+7. See dashboard counts, task-based progress, pending tasks, and deadlines.
+8. Close and restart the application without losing saved records.
+9. Be prevented from accessing another Owner's private records, including by guessing record IDs.
 V1 is successful when the above behaviors work and are covered by automated tests, including invalid-input and cross-owner-access cases.
 
 ## 3. Users and Access Model
@@ -32,12 +33,22 @@ Owners are the application's account users in V1. Multiple Owners can register, 
 ### 3.2 Business client
 A business client is a contact record stored by an Owner. Business clients do not sign in and do not receive a portal or dashboard in V1.
 
-### 3.3 Account registration
-Owner accounts are created through public email/password registration. Registration creates an account but does not sign the user in; login and session decisions are recorded in section 16.
+### 3.3 Account registration and sign-in
+
+V1 supports public Owner registration and sign-in using email/password, Google, or GitHub. Email/password registration requires email OTP verification before private workspace access. A provider-verified email from Google or GitHub satisfies this requirement; when the provider response does not establish email verification, ClientPilot requires its own email OTP. Phone-number verification and SMS OTP are not required.
+
+The existing email/password profile requirements remain in force: registration requires full name, email, password, and an E.164 phone number. This is a phone-number collection requirement, not a phone verification requirement. Whether social sign-in onboarding must collect a phone number when the provider does not supply one is unresolved; see section 17.
+
+Business clients are never account users. A provider identity is associated using its stable provider identity, not email alone. Existing Owner accounts are not automatically merged or linked based only on matching email addresses. Detailed authentication decisions are in section 16.2.
+
+### 3.4 Public landing page and navigation (CD-001)
+
+The public experience is one landing page. Home, Features, and About are in-page sections, not separate marketing routes. The logged-out navigation shows the ClientPilot brand, Home, Features, About, Login, and Register. When an Owner is signed in, Home, Features, and About remain available and the navigation provides Dashboard and account/logout controls while hiding or replacing Login/Register as appropriate. The page includes a hero, product-relevant visual, concise benefits, How It Works content, a call to action, and a footer. Use `frontend/public/ClientPilot.png` as the hero asset unless the Owner approves a replacement. Public previews use sample/static content only and must not expose an Owner's workspace data.
 
 ## 4. V1 Scope
 ### 4.1 Included
-- Owner email/password registration, login, and logout.
+- Public single-page landing experience and navigation as defined in section 3.4.
+- Owner email/password registration with email OTP verification, Google/GitHub sign-in, and secure logout as defined in sections 11 and 16.2.
 - Client create, list, detail, and update.
 - Project create, list, detail, and update.
 - Task create and list/view.
@@ -46,6 +57,7 @@ Owner accounts are created through public email/password registration. Registrat
 - Persistent database storage.
 - Input validation and predictable API errors.
 - Server-side authentication, authorization, and record ownership checks.
+- Private workspace access gated by authentication and required email verification, independently of frontend navigation state.
 - Automated tests for successful operations, validation failures, missing records, authentication failures, and cross-owner access attempts.
 ### 4.2 Excluded
 - Business-client accounts or a client portal.
@@ -55,6 +67,7 @@ Owner accounts are created through public email/password registration. Registrat
 - AI agents, automatic project planning, or AI recommendations.
 - Teams, complex role/permission systems, microservices, queues, or caching.
 - Permanent deletion of client, project, or task records.
+- Phone-number verification and SMS OTP.
 Future features belong to later versions and must not be pulled into V1 without an explicit scope change.
 
 ## 5. Core Data Concepts and Relationships
@@ -212,14 +225,20 @@ All dashboard metrics must be calculated from persisted records belonging to the
 
 Dashboard acceptance requires tests that compare the displayed/returned metrics with the authenticated Owner's actual database records, including zero-task and overdue cases.
 ## 11. Authentication and Security Requirements
-- Only an Owner account created through registration can authenticate in V1.
-- Passwords must never be stored in plaintext. Use a suitable password-hashing approach.
-- Unauthenticated private API requests must be rejected.
-- The backend must establish the current Owner from the authenticated identity.
-- Every private API operation, including client, project, task, and dashboard operations, must enforce ownership on database reads and mutations. Ownership must be checked through the relevant relationships (Owner → Client → Project → Task).
-- Cross-owner access attempts must not reveal or change another Owner's records.
-- Secrets and environment-specific configuration must not be hard-coded in source code.
-- The registration, authentication, secure logout behavior, and cookie handling are decided for the Owner/client slice in section 16.
+
+The approved authentication requirements are recorded in section 16.2. This section defines required security properties; concrete OTP/provider/API details that remain open are listed in section 17 and must be settled in the existing architecture/LLD before implementation.
+
+- Supported V1 sign-in methods are email/password, Google OAuth/OIDC, and GitHub OAuth.
+- Email/password accounts must verify their email address through ClientPilot email OTP before receiving private workspace access. A Google/GitHub identity with a provider-verified email satisfies this requirement. If the provider response does not establish verified ownership of the email, require ClientPilot email OTP before private access.
+- Provider identity is based on the stable provider identity (provider and provider user ID), never email alone. Do not automatically merge or link accounts because email addresses match.
+- Passwords must never be stored in plaintext. Continue using the approved Argon2 password-hashing design for password accounts.
+- Existing linked provider identities authenticate their associated Owner. Linking an unlinked provider to an existing Owner requires authentication to that Owner account, an explicit action in account settings, fresh provider authorization, and appropriate re-authentication. A provider identity already linked to another Owner cannot be linked again through this flow.
+- OTPs must be one-time, expire, be stored/protected safely, and have resend throttling and attempt limits. Exact format, durations, thresholds, storage representation, and delivery-failure behavior remain open until the LLD is approved.
+- OAuth callbacks must validate provider responses and restrict redirect destinations. Exact callback, state/CSRF, and session-handling mechanics are defined in the LLD.
+- A private API request is authorized only when the session is valid and the Owner has met the email-verification requirement. Authentication and verification checks are backend-enforced on every private operation, including client, project, task, and dashboard operations. Ownership is checked through Owner → Client → Project → Task as relevant.
+- The public landing page and its navigation are not a security boundary. A direct request to a private page must not expose Owner data before the backend has confirmed an authenticated, email-verified Owner. Private APIs independently enforce that same gate and ownership.
+- Cross-owner access attempts must not reveal or change another Owner's records. Secrets and environment-specific configuration must not be hard-coded in source code.
+- Preserve the approved session design in section 16: opaque high-entropy token, only its SHA-256 hash persisted, `HttpOnly`, `SameSite=Strict`, path `/`, eight-hour default lifetime, `Secure` on HTTPS, and immediate revocation on logout. Successful verified password and provider sign-in use this server-managed session unless an approved decision supersedes it.
 ## 12. API Error Contract
 The API must return predictable errors for at least:
 - Invalid or missing fields.
@@ -227,7 +246,7 @@ The API must return predictable errors for at least:
 - Missing/invalid authentication.
 - Invalid relationship references, such as linking a project to an inaccessible client.
 - Invalid task status values.
-The Owner/client response and status contract, including the missing-versus-inaccessible client policy, is documented in section 16. The project response and status contract is documented in section 8.3. The task response and status contract is documented in section 9.3. Dashboard endpoint details remain to be finalized. Regardless of response choice, cross-owner data must not be disclosed or modified.
+The Owner/client response and status contract, including the missing-versus-inaccessible client policy, is documented in section 16. The project response and status contract is documented in section 8.3. The task response and status contract is documented in section 9.3. The OTP, provider callback, account-linking, and unverified-account response contracts and dashboard endpoint details remain to be finalized in the LLD/API contract before implementation. Regardless of response choice, cross-owner data must not be disclosed or modified.
 ## 13. Initial Architecture Direction
 The initial architecture direction is:
 - Frontend: Next.js, responsible for screens, forms, and user interactions.
@@ -248,6 +267,11 @@ Performance targets, backup/restore requirements, deployment environment, and pr
 ## 15. V1 Completion Checklist
 V1 is complete when all of the following are verified:
 - [ ] An Owner can register, then log in and log out.
+- [ ] Email/password Owners must complete email OTP verification before private access.
+- [ ] Google and GitHub sign-in validate provider identity server-side; unverified provider emails go through ClientPilot email OTP.
+- [ ] Matching email addresses never auto-link Owner accounts; provider linking follows the explicit authenticated flow in section 16.2.
+- [ ] Private pages/APIs do not expose Owner data before authentication and required email verification; backend checks are independent of navbar state.
+- [ ] The public landing page has the approved Home, Features, and About sections and adapts navigation to signed-in state.
 - [ ] Owner can create, list, view, and update their own clients.
 - [ ] Owner can create, list, view, and update projects linked to their own clients.
 - [ ] Owner can create and view tasks and update task status.
@@ -284,15 +308,39 @@ The following decisions are the approved V1 implementation baseline for Owner re
 - Client duplicate detection uses a non-null normalized email as one duplicate key, and a non-null normalized name/company pair as another. Name/company matching is case-insensitive after trimming. This permits multiple clients with the same name when company is absent, while preventing a repeated email or repeated name-and-company pair within one Owner's workspace. Null optional values do not create matches. The same `409` response is used for create and update conflicts.
 - UTC timestamps and UUID identifiers provide consistent API timestamps and non-sequential resource identifiers. Pagination is deferred to keep the initial client list simple while the dataset is small.
 
+### 16.2 Approved V1 authentication and public-experience decisions (CD-001 and CD-002)
+
+This subsection records the approved amendments supplied for CD-001 and CD-002 in the existing specification so there is one in-repository decision source. These amendments extend V1 and supersede older wording that limited Owner sign-in to email/password or omitted the public landing-page navigation requirements. They do not change the settled client, project, task, or session contracts in sections 7–9 and 16.
+
+1. **Email/password registration and phone number:** Email/password registration continues to require `full_name`, `email`, `password`, and `phone_number`. The phone number is trimmed, validated as E.164, and collected as an Owner profile field. Phone verification and SMS OTP are not required. This preserves the existing approved collection rule and treats collection separately from verification. Existing legacy accounts may retain null profile fields as specified in section 16.
+2. **Email verification:** A newly registered email/password Owner remains ineligible for private workspace access until a valid ClientPilot email OTP has verified the address. Verification is required before Dashboard or private API access. No email/password path may bypass this gate.
+3. **Google/GitHub sign-in:** Google OAuth/OIDC and GitHub sign-in are included in V1. The backend validates provider responses and uses the provider's stable user ID with the provider as identity key. A trusted provider-verified email satisfies the email-verification gate; otherwise ClientPilot email OTP is required before private access.
+4. **Account linking:** Never auto-link or merge Owner accounts solely because their emails match. An existing linked provider identity authenticates its associated Owner. Linking a new provider to an existing Owner requires an authenticated existing account, an explicit account-settings action, fresh provider authorization, and appropriate re-authentication. A provider identity already linked to another Owner cannot be linked to a second Owner through this flow.
+5. **Sessions:** Preserve the existing persisted opaque-session design: cryptographically random token, SHA-256 token hash stored in the database, browser cookie marked `HttpOnly` and `SameSite=Strict` at path `/`, eight-hour default lifetime, `Secure` for HTTPS, and server-side revocation on logout. Password and provider sessions are server-issued and are created only after the corresponding sign-in and verification requirements are met. The backend resolves the Owner from the session, never request data.
+6. **Private access:** Backend authorization independently checks session validity, required email verification, and owner-scoped resource access on every private API. The Next.js workspace shell may use the current-owner API to decide what to render and where to navigate, but it is only a user-experience guard. Direct navigation and altered client-side state must never expose private Owner data.
+7. **Public experience:** The marketing site is one public landing page with in-page Home, Features, and About sections. Logged-out navigation provides the brand, section links, Login, and Register. Signed-in navigation retains the public section links and provides Dashboard and account/logout controls instead of Login/Register. The hero uses `frontend/public/ClientPilot.png` unless an alternative is approved. Public examples/previews are static/sample data only. The page includes product benefits, a How It Works section, a CTA, and a footer.
+8. **No phone verification:** CD-002 excludes phone verification/SMS OTP. It does not revoke the existing phone-number collection requirement for email/password registration. Whether social-provider onboarding must collect a phone number when the provider does not supply one is not specified and remains open in section 17.
+
 ## 17. Decisions Still Open
 
-1. Handling of duplicate client records that already exist when duplicate enforcement is introduced. Recommendation: preserve existing records without automatic merge or deletion; enforce the rule for new creates and updates, and separately report any pre-existing duplicate data for an owner-approved resolution.
-2. Concurrency handling for simultaneous client create/update requests that would otherwise pass separate duplicate checks. Recommendation: enforce the check within the write transaction and add a database-level safeguard where feasible; if the compound rule cannot be expressed safely as a constraint, document and test the chosen transaction/locking behavior.
-3. Task due-date, editable-field, and status-transition rules are decided in section 9.2.
-4. Dashboard deadline window, time-zone handling, and overdue display behavior.
-5. Task list behavior is decided in section 9.3.
-6. Delete/archive policy; permanent deletion remains excluded from V1.
-7. Backups and future production database/deployment requirements.
+The following details are not settled by CD-001/CD-002 or the existing feature contracts. Resolve only the decisions needed for the next milestone; do not reopen sections 7–9 or the approved session-cookie design.
+
+### 17.1 Authentication LLD and API details required before CD-002 implementation
+
+1. OTP format, lifetime, resend cooldown/limits, attempt limits, safe storage/cleanup, and email-delivery provider/failure/retry behavior.
+2. Registration and verification response/status contracts, duplicate-email disclosure behavior, and whether successful OTP verification creates a session or requires a separate password login. In all cases, no private access is allowed before verification.
+3. Whether first-time Google/GitHub sign-in provisions a new Owner, which profile fields it requires, and whether social onboarding must collect a phone number when the provider does not supply one. For email/password registration, phone collection remains required as recorded in 16.2; phone verification remains excluded.
+4. Provider scopes/configuration, callback and CSRF/state mechanics, provider failure behavior, safe redirect allowlist, and re-authentication details for account linking.
+5. Account recovery, password reset/change, changing a verified email, and lost-provider access behavior.
+6. Database representation/migration for email verification state, OTP challenges, and provider identities, including compatibility for existing password accounts. Exact records must support the stable-provider-identity and no-auto-link rules.
+
+### 17.2 Other unresolved V1 decisions
+
+1. Dashboard deadline window, date/time-zone boundaries, overdue grouping and display, and which project/task deadline types appear together.
+2. Dashboard API endpoint/response contract and its error behavior.
+3. Backups, deployment environment, production database/migration, and performance targets when release deployment is planned.
+
+The project-status, client, task-field, task-transition, task-list, and session-cookie decisions already recorded in sections 8.3, 9, and 16 are settled and are not reopened by this list.
 
 ## 18. Next Step
-Owner/client, Project, and Task contracts are documented in sections 16, 8.3, and 9. Task implementation follows the Task API and acceptance criteria in section 9. Dashboard deadline and deployment decisions remain open and must be resolved before their respective implementation milestones. Continue in small, testable increments; do not implement unresolved behavior by assumption.
+Owner/client, Project, Task, and authentication/public-experience requirements are documented in sections 7–9 and 16. Before implementing the CD-002 authentication extension, finalize the authentication LLD/API decisions in section 17.1. Resolve section 17.2 dashboard decisions before dashboard deadline implementation. Continue in small, testable increments; do not implement unresolved behavior by assumption.
