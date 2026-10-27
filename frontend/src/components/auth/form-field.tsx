@@ -17,16 +17,16 @@ export function FormField({
 }: FormFieldProps) {
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="block text-sm font-medium text-[#344054]">
+      <label htmlFor={id} className="block text-sm font-semibold text-slate-700">
         {label}
       </label>
       {children}
       {error ? (
-        <p id={`${id}-error`} className="text-xs leading-5 text-[#c4320a]">
+        <p id={`${id}-error`} className="text-xs leading-5 text-rose-700">
           {error}
         </p>
       ) : hint ? (
-        <p id={`${id}-hint`} className="text-xs leading-5 text-[#667085]">
+        <p id={`${id}-hint`} className="text-xs leading-5 text-slate-500">
           {hint}
         </p>
       ) : null}

@@ -6,19 +6,25 @@ type BrandMarkProps = {
 export function BrandMark({ small = false, className = "" }: BrandMarkProps) {
   return (
     <span
-      className={`flex ${small ? "size-7 rounded-lg" : "size-9 rounded-xl"} items-center justify-center bg-[#24243d] text-white shadow-sm ${className}`}
+      aria-hidden="true"
+      className={`relative flex ${small ? "size-7 rounded-[0.65rem]" : "size-10 rounded-[0.9rem]"} items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-600 to-blue-500 text-white shadow-[0_5px_12px_rgba(79,70,229,0.22)] ring-1 ring-indigo-500/10 ${className}`}
     >
       <svg
         viewBox="0 0 24 24"
         fill="none"
-        className={small ? "size-4" : "size-5"}
-        aria-hidden="true"
+        className={small ? "size-[17px]" : "size-[21px]"}
       >
         <path
-          d="M5 17.5 9.3 6.5h2.2l4.1 11h-2.4l-.9-2.6H8.2l-1 2.6H5Z"
+          d="M20.7 3.8 3.9 10.2c-.8.3-.8 1.4 0 1.7l6.5 2.2 2.2 6.3c.3.8 1.4.8 1.7 0l6.4-16.5c.2-.6-.3-1.1-.9-1.1Z"
           fill="currentColor"
         />
-        <path d="M15 6.5h4v2h-4z" fill="#a5b4fc" />
+        <path
+          d="m10.4 14.1 6.1-6.1"
+          stroke="#c7d2fe"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     </span>
   );

@@ -81,20 +81,21 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f8fc] lg:grid lg:grid-cols-[256px_minmax(0,1fr)]">
-      <aside className="border-b border-[#e7e9f0] bg-white lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
-        <div className="flex h-full flex-col px-4 py-5 sm:px-6 lg:px-5">
-          <Link href="/dashboard" className="flex items-center gap-3 px-2">
+    <main className="min-h-screen bg-[var(--cp-background)] lg:grid lg:grid-cols-[264px_minmax(0,1fr)]">
+      <aside className="border-b border-slate-200/80 bg-white lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
+        <div className="flex h-full flex-col px-4 py-4 sm:px-6 lg:px-5 lg:py-6">
+          <Link href="/dashboard" className="group flex items-center gap-3 px-2 focus-visible:rounded-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20">
+            <span className="transition-transform duration-200 group-hover:-rotate-3 group-hover:scale-105 motion-reduce:transform-none">
             <BrandMark />
-            <span className="text-[15px] font-bold tracking-[-0.02em] text-[#182230]">ClientPilot</span>
+            </span>
+            <span className="text-[15px] font-bold tracking-[-0.045em] text-slate-950">Client<span className="text-indigo-600">Pilot</span></span>
           </Link>
-          <Link href="/projects" className="mt-8 flex min-h-10 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(79,70,229,0.2)] transition hover:-translate-y-0.5 hover:bg-indigo-700 lg:mt-9">
+          <Link href="/projects" className="mt-6 flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(79,70,229,0.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/25 lg:mt-9 motion-reduce:transform-none">
             <Plus size={16} aria-hidden="true" /> New project
           </Link>
-          <p className="mb-3 mt-8 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#98a2b3]">Workspace</p>
-          <nav aria-label="Workspace" className="flex gap-1 overflow-x-auto lg:flex-col">
-            {navigation.map(({ href, label }) => {
-              const Icon = navigation.find((item) => item.href === href)?.icon ?? LayoutDashboard;
+          <p className="mb-2 mt-6 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 lg:mb-3 lg:mt-9">Workspace</p>
+          <nav aria-label="Workspace" className="flex gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:flex-col lg:overflow-visible lg:pb-0">
+            {navigation.map(({ href, label, icon: Icon }) => {
               const active =
                 href === "/dashboard"
                   ? pathname === href
@@ -106,8 +107,8 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                   aria-current={active ? "page" : undefined}
                   className={`flex min-h-10 items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 ${
                     active
-                      ? "bg-indigo-50 text-indigo-700"
-                      : "text-[#667085] hover:bg-[#f6f7fb] hover:text-[#182230]"
+                        ? "bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-950/[0.03]"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
                   }`}
                 >
                   <Icon aria-hidden="true" size={17} strokeWidth={1.8} />
@@ -116,18 +117,18 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
-          <div className="mt-auto hidden border-t border-[#eef0f4] pt-4 lg:block">
+          <div className="mt-auto hidden border-t border-slate-100 pt-4 lg:block">
             {owner ? (
               <div className="mb-3 flex items-center gap-3 px-2">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#e9eaff] text-xs font-bold text-indigo-700">{(owner.full_name ?? owner.email).slice(0, 1).toUpperCase()}</span>
-                <span className="min-w-0"><span className="block truncate text-sm font-semibold text-[#344054]">{owner.full_name ?? "Your workspace"}</span><span className="block truncate text-xs text-[#98a2b3]">{owner.email}</span></span>
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-100 to-sky-100 text-xs font-bold text-indigo-700 ring-1 ring-indigo-200/70">{(owner.full_name ?? owner.email).slice(0, 1).toUpperCase()}</span>
+                <span className="min-w-0"><span className="block truncate text-sm font-semibold text-slate-700">{owner.full_name ?? "Your workspace"}</span><span className="block truncate text-xs text-slate-400">{owner.email}</span></span>
               </div>
             ) : null}
             <button
               type="button"
               onClick={handleLogout}
               disabled={signingOut || !owner}
-              className="flex min-h-10 w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold text-[#667085] transition hover:bg-[#f6f7fb] hover:text-[#182230] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 disabled:opacity-60"
+              className="flex min-h-10 w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 disabled:opacity-60"
             >
               <LogOut aria-hidden="true" size={17} />{signingOut ? "Signing out…" : "Sign out"}
             </button>
@@ -136,30 +137,30 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="min-w-0">
-      <header className="sticky top-0 z-20 flex h-[72px] items-center justify-between border-b border-[#e7e9f0] bg-white/90 px-5 backdrop-blur-xl sm:px-8 lg:px-10">
-        <div><p className="text-xs font-medium text-[#98a2b3]">Private workspace</p><p className="mt-0.5 text-sm font-semibold text-[#344054]">{navigation.find((item) => item.href === (pathname.startsWith("/clients") ? "/clients" : pathname.startsWith("/projects") ? "/projects" : "/dashboard"))?.label}</p></div>
+      <header className="sticky top-0 z-20 flex h-[68px] items-center justify-between border-b border-slate-200/80 bg-white/90 px-5 backdrop-blur-xl sm:h-[76px] sm:px-8 lg:px-10">
+        <div><p className="text-[11px] font-medium text-slate-400">Private workspace</p><p className="mt-0.5 text-sm font-semibold text-slate-700">{navigation.find((item) => item.href === (pathname.startsWith("/clients") ? "/clients" : pathname.startsWith("/projects") ? "/projects" : "/dashboard"))?.label}</p></div>
         <div className="flex items-center gap-3 lg:hidden">
-          {owner ? <span className="flex size-8 items-center justify-center rounded-full bg-indigo-50 text-xs font-bold text-indigo-700">{(owner.full_name ?? owner.email).slice(0, 1).toUpperCase()}</span> : null}
-          <button type="button" onClick={handleLogout} disabled={signingOut || !owner} aria-label="Sign out" className="rounded-lg p-2 text-[#667085] hover:bg-[#f6f7fb] disabled:opacity-60"><LogOut size={17} /></button>
+          {owner ? <span className="flex size-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-100 to-sky-100 text-xs font-bold text-indigo-700 ring-1 ring-indigo-200/70">{(owner.full_name ?? owner.email).slice(0, 1).toUpperCase()}</span> : null}
+          <button type="button" onClick={handleLogout} disabled={signingOut || !owner} aria-label="Sign out" className="rounded-xl p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 disabled:opacity-60"><LogOut size={17} aria-hidden="true" /></button>
         </div>
       </header>
-      <section className="mx-auto w-full max-w-[1440px] px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+      <section className="mx-auto w-full max-w-[1440px] px-5 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-11">
         {loading ? (
           <div
-            className="rounded-2xl border border-[#eaecf0] bg-white p-8 text-sm text-[#667085]"
+            className="cp-panel p-6 text-sm text-slate-600 sm:p-8"
             role="status"
           >
             Verifying your private workspace…
           </div>
         ) : error ? (
           <div
-            className="max-w-xl rounded-2xl border border-[#fecdca] bg-white p-8"
+            className="cp-panel max-w-xl border-rose-200 p-6 sm:p-8"
             role="alert"
           >
-            <h1 className="text-xl font-semibold text-[#182230]">
+            <h1 className="text-xl font-semibold tracking-tight text-slate-950">
               Workspace unavailable
             </h1>
-            <p className="mt-2 text-sm leading-6 text-[#b42318]">{error}</p>
+            <p className="mt-2 text-sm leading-6 text-rose-700">{error}</p>
             <Button
               type="button"
               className="mt-6 max-w-48"
@@ -173,16 +174,16 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             </Button>
           </div>
         ) : owner && !owner.email_verified ? (
-          <div className="max-w-xl rounded-2xl border border-[#fedf89] bg-white p-8" role="alert">
-            <h1 className="text-xl font-semibold text-[#182230]">Verify your email to continue</h1>
-            <p className="mt-2 text-sm leading-6 text-[#667085]">Your private workspace is available after email verification.</p>
-            <Link href={`/verify-email?${new URLSearchParams({ email: owner.email }).toString()}`} className="mt-6 inline-flex min-h-10 items-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white">Verify email</Link>
+          <div className="cp-panel max-w-xl border-amber-200 p-6 sm:p-8" role="alert">
+            <h1 className="text-xl font-semibold tracking-tight text-slate-950">Verify your email to continue</h1>
+            <p className="mt-2 text-sm leading-6 text-slate-600">Your private workspace is available after email verification.</p>
+            <Link href={`/verify-email?${new URLSearchParams({ email: owner.email }).toString()}`} className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/25">Verify email</Link>
           </div>
         ) : owner ? (
           <>
             {children}
             {logoutError ? (
-              <p role="alert" className="mt-6 text-sm text-[#b42318]">
+              <p role="alert" className="cp-alert-error mt-6 px-4 py-3 text-sm">
                 {logoutError}
               </p>
             ) : null}
