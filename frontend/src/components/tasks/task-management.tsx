@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { CalendarDays, CheckCircle2, Circle } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { FormField } from "@/components/auth/form-field";
+import { startNavigationProgress } from "@/components/layout/navigation-progress";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,7 @@ export function TaskManagement({ projectId }: { projectId: string }) {
 
   const handleError = useCallback((error: unknown): string => {
     if (error instanceof ApiError && error.status === 401) {
+      startNavigationProgress("/");
       router.replace("/");
       router.refresh();
       return "Your session has expired. Redirecting to sign in.";

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { NavigationProgress } from "@/components/layout/navigation-progress";
 import { AuthProvider } from "@/features/auth/session-context";
 import "./globals.css";
 
@@ -30,9 +31,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <NavigationProgress />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

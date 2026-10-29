@@ -16,6 +16,7 @@ import { ClientProjectList } from "@/components/clients/client-project-list";
 import { FormField } from "@/components/auth/form-field";
 import { Input } from "@/components/ui/input";
 import { ApiError } from "@/features/api/client";
+import { startNavigationProgress } from "@/components/layout/navigation-progress";
 import {
   clientFieldsFromForm,
   validateClientForm,
@@ -86,6 +87,7 @@ export function ClientManagement({
   const handleApiError = useCallback(
     (error: unknown): string => {
       if (error instanceof ApiError && error.status === 401) {
+        startNavigationProgress("/");
         router.replace("/");
         router.refresh();
         return "Your session has expired. Redirecting to sign in.";
@@ -268,6 +270,7 @@ export function ClientManagement({
       setEditOpen(false);
       onClientsChanged?.();
       await refreshClients();
+      startNavigationProgress("/clients");
       router.replace("/clients");
     } catch (error) {
       setDeleteError(handleApiError(error));

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { BriefcaseBusiness, LayoutDashboard, LogOut, Plus, Users } from "lucide-react";
+import { startNavigationProgress } from "@/components/layout/navigation-progress";
 import { useAuth } from "@/features/auth/session-context";
 import type { Owner } from "@/features/auth/types";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (state.status === "unauthenticated") {
+      startNavigationProgress("/");
       router.replace("/");
     }
   }, [router, state.status]);
@@ -35,6 +37,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
     setSigningOut(true);
     try {
       await logout();
+      startNavigationProgress("/");
       router.replace("/");
       router.refresh();
     } catch (requestError) {

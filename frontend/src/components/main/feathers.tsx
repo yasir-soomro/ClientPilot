@@ -74,8 +74,9 @@ export default function Features() {
               </h2>
             </div>
             <p className="max-w-xl text-sm leading-7 text-[#495057] sm:text-base sm:leading-8 lg:justify-self-end">
-              Bring the people, plans, next steps, and dates behind your client
-              work together—without adding a complicated system to manage.
+              Connect client context to project plans, actionable tasks, and
+              deadlines in one clear view—without adding another complicated
+              system to manage.
             </p>
           </div>
 
@@ -95,27 +96,53 @@ export default function Features() {
                     ease: [0.22, 1, 0.36, 1],
                   }}
                   whileHover={reduceMotion ? undefined : { y: -3 }}
-                  className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-[#dee2e6] bg-white p-5 transition-[border-color,box-shadow] duration-200 hover:border-[#adb5bd] hover:shadow-[0_16px_38px_rgba(33,37,41,0.07)] sm:rounded-3xl sm:p-6"
+                  className={`group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border p-5 transition-[border-color,background-color,box-shadow] duration-200 hover:shadow-[0_16px_38px_rgba(33,37,41,0.12)] sm:rounded-3xl sm:p-6 ${
+                    index === 0
+                      ? "border-[#495057] bg-[#343a40] text-white hover:border-[#adb5bd] hover:bg-[#2b3035]"
+                      : "border-[#dee2e6] bg-white text-[#212529] hover:border-[#adb5bd]"
+                  }`}
                 >
                   <div className="flex items-center justify-between gap-4">
-                    <span className="flex size-11 items-center justify-center rounded-xl border border-[#dee2e6] bg-[#f8f9fa] text-[#343a40] transition-colors duration-200 group-hover:bg-[#e9ecef]">
+                    <span
+                      className={`flex size-11 items-center justify-center rounded-xl border transition-colors duration-200 ${
+                        index === 0
+                          ? "border-[#6c757d] bg-[#495057] text-white group-hover:bg-[#6c757d]"
+                          : "border-[#dee2e6] bg-[#f8f9fa] text-[#343a40] group-hover:bg-[#e9ecef]"
+                      }`}
+                    >
                       <Icon
                         aria-hidden="true"
                         size={21}
                         strokeWidth={1.8}
                       />
                     </span>
-                    <span className="text-xs font-bold tracking-[0.14em] text-[#6c757d]">
+                    <span
+                      className={`text-xs font-bold tracking-[0.14em] ${
+                        index === 0 ? "text-[#ced4da]" : "text-[#6c757d]"
+                      }`}
+                    >
                       {number}
                     </span>
                   </div>
-                  <p className="mt-6 text-[10px] font-bold tracking-[0.15em] text-[#6c757d]">
+                  <p
+                    className={`mt-6 text-[10px] font-bold tracking-[0.15em] ${
+                      index === 0 ? "text-[#ced4da]" : "text-[#6c757d]"
+                    }`}
+                  >
                     {label}
                   </p>
-                  <h3 className="mt-2 text-lg font-semibold leading-snug tracking-[-0.025em] text-[#212529]">
+                  <h3
+                    className={`mt-2 text-lg font-semibold leading-snug tracking-[-0.025em] ${
+                      index === 0 ? "text-white" : "text-[#212529]"
+                    }`}
+                  >
                     {title}
                   </h3>
-                  <p className="mt-3 flex-1 text-sm leading-6 text-[#495057]">
+                  <p
+                    className={`mt-3 flex-1 text-sm leading-6 ${
+                      index === 0 ? "text-[#dee2e6]" : "text-[#495057]"
+                    }`}
+                  >
                     {description}
                   </p>
                 </motion.article>

@@ -44,8 +44,9 @@ export default function Hero() {
           </h1>
 
           <p className="mt-6 max-w-xl text-base leading-7 text-[#495057] sm:text-lg sm:leading-8">
-            Keep client details, project plans, tasks, and delivery progress
-            together—so the next step is easier to see and the work stays yours.
+            Keep client details, project plans, tasks, deadlines, and delivery
+            progress together—so the next step is easier to see and the work
+            stays yours.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 min-[480px]:flex-row min-[480px]:items-center">

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ApiError } from "@/features/api/client";
+import { startNavigationProgress } from "@/components/layout/navigation-progress";
 import { listProjects } from "@/features/projects/service";
 import type { Project } from "@/features/projects/types";
 
@@ -29,6 +30,7 @@ export function ClientProjectList({ clientId }: { clientId: string }) {
           return;
         }
         if (requestError instanceof ApiError && requestError.status === 401) {
+          startNavigationProgress("/");
           router.replace("/");
           router.refresh();
           return;

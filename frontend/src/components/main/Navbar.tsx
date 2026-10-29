@@ -12,10 +12,10 @@ import {
   X,
 } from "lucide-react";
 import { BrandMark } from "@/components/ui/brand-mark";
+import { startNavigationProgress } from "@/components/layout/navigation-progress";
 import { useAuth } from "@/features/auth/session-context";
 
 const links = [
-  ["Features", "/#features"],
   ["Why ClientPilot", "/why-clientpilot"],
   ["How it works", "/how-it-works"],
   ["About", "/about"],
@@ -78,6 +78,7 @@ export default function Navbar() {
     try {
       await logout();
       setMenuOpen(false);
+      startNavigationProgress("/");
       router.replace("/");
       router.refresh();
     } catch (error) {

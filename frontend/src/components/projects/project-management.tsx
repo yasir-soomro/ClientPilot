@@ -15,6 +15,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { TaskManagement } from "@/components/tasks/task-management";
 import { ApiError } from "@/features/api/client";
+import { startNavigationProgress } from "@/components/layout/navigation-progress";
 import { listClients } from "@/features/clients/service";
 import type { Client } from "@/features/clients/types";
 import {
@@ -96,6 +97,7 @@ export function ProjectManagement({
   const handleApiError = useCallback(
     (error: unknown): string => {
       if (error instanceof ApiError && error.status === 401) {
+        startNavigationProgress("/");
         router.replace("/");
         router.refresh();
         return "Your session has expired. Redirecting to sign in.";
@@ -291,6 +293,7 @@ export function ProjectManagement({
       setDetailsError("");
       setEditOpen(false);
       await refreshProjects();
+      startNavigationProgress("/projects");
       router.replace("/projects");
     } catch (error) {
       setDeleteError(handleApiError(error));

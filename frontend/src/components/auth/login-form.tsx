@@ -7,6 +7,7 @@ import { useState, type FormEvent } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { FormField } from "@/components/auth/form-field";
 import { PasswordInput } from "@/components/auth/password-input";
+import { startNavigationProgress } from "@/components/layout/navigation-progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/session-context";
@@ -39,6 +40,7 @@ export function LoginForm() {
     setLoading(true);
     try {
       await login(input);
+      startNavigationProgress("/dashboard");
       router.replace("/dashboard");
       router.refresh();
     } catch (error) {

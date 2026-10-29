@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowUpRight, BarChart3, BriefcaseBusiness, CalendarClock, CheckCircle2, CircleAlert, ListTodo, Users } from "lucide-react";
 import { motion, MotionConfig } from "framer-motion";
 import { ApiError } from "@/features/api/client";
+import { startNavigationProgress } from "@/components/layout/navigation-progress";
 import { listClients } from "@/features/clients/service";
 import type { Client } from "@/features/clients/types";
 import { listProjects } from "@/features/projects/service";
@@ -35,7 +36,7 @@ export function DashboardOverview() {
         if (active) { setClients(clientRecords); setProjects(projectRecords); setTasks(taskGroups.flat()); setError(""); }
       } catch (requestError: unknown) {
         if (!active) return;
-        if (requestError instanceof ApiError && requestError.status === 401) { router.replace("/"); router.refresh(); return; }
+        if (requestError instanceof ApiError && requestError.status === 401) { startNavigationProgress("/"); router.replace("/"); router.refresh(); return; }
         setError(requestError instanceof Error ? requestError.message : "Unable to load workspace overview.");
       } finally { if (active) setLoading(false); }
     }
