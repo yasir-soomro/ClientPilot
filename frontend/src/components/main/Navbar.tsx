@@ -12,17 +12,13 @@ import {
   X,
 } from "lucide-react";
 import { BrandMark } from "@/components/ui/brand-mark";
-import {
-  AuthApiError,
-  getCurrentOwner,
-  logoutOwner,
-} from "@/features/auth/service";
-import type { Owner } from "@/features/auth/types";
+import { useAuth } from "@/features/auth/session-context";
 
 const links = [
+  ["Features", "/#features"],
   ["Why ClientPilot", "/why-clientpilot"],
-  ["About", "/about"],
   ["How it works", "/how-it-works"],
+  ["About", "/about"],
 ] as const;
 
 function isActive(pathname: string, href: string) {
@@ -33,20 +29,12 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const menuRef = useRef<HTMLDivElement>(null);
-  const [owner, setOwner] = useState<Owner | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const { state, refresh, logout } = useAuth();
+  const owner = state.status === "authenticated" ? state.owner : null;
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState("");
-
-  useEffect(() => {
-    getCurrentOwner()
-      .then(setOwner)
-      .catch((error: unknown) => {
-        if (!(error instanceof AuthApiError && (error.status === 401 || error.status === 403))) {
-          setOwner(null);
-        }
-      });
-  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -58,7 +46,10 @@ export default function Navbar() {
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setMenuOpen(false);
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        menuButtonRef.current?.focus();
+      }
     }
 
     document.addEventListener("pointerdown", handlePointerDown);
@@ -69,13 +60,25 @@ export default function Navbar() {
     };
   }, [menuOpen]);
 
+  useEffect(() => {
+    const desktopViewport = window.matchMedia("(min-width: 1024px)");
+    function closeMenuOnDesktop(event: MediaQueryListEvent) {
+      if (event.matches) setMenuOpen(false);
+    }
+
+    desktopViewport.addEventListener("change", closeMenuOnDesktop);
+    return () => {
+      desktopViewport.removeEventListener("change", closeMenuOnDesktop);
+    };
+  }, []);
+
   async function handleLogout() {
     setLoggingOut(true);
     setLogoutError("");
     try {
-      await logoutOwner();
-      setOwner(null);
+      await logout();
       setMenuOpen(false);
+      router.replace("/");
       router.refresh();
     } catch (error) {
       setLogoutError(
@@ -91,10 +94,10 @@ export default function Navbar() {
       <Link
         href="/dashboard"
         aria-current={pathname === "/dashboard" ? "page" : undefined}
-        className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 ${
+        className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25 ${
           pathname.startsWith("/dashboard")
-            ? "bg-indigo-50 text-indigo-700"
-            : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+            ? "bg-[#f1f3f5] text-[#212529]"
+            : "text-[#495057] hover:bg-[#f1f3f5] hover:text-[#212529]"
         }`}
       >
         <LayoutDashboard size={16} aria-hidden="true" />
@@ -110,7 +113,7 @@ export default function Navbar() {
         {loggingOut ? "Signing out…" : "Log out"}
       </button>
     </>
-  ) : (
+  ) : state.status === "unauthenticated" ? (
     <>
       <Link
         href="/login"
@@ -130,29 +133,29 @@ export default function Navbar() {
         />
       </Link>
     </>
-  );
+  ) : null;
 
   return (
     <MotionConfig reducedMotion="user">
-      <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/85 shadow-[0_1px_8px_rgba(15,23,42,0.025)] backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl">
         <nav
           aria-label="Main navigation"
-          className="mx-auto flex h-[68px] max-w-7xl items-center justify-between gap-4 px-4 sm:h-[76px] sm:px-7 lg:px-10"
+          className="mx-auto flex h-[64px] max-w-7xl items-center justify-between gap-3 px-4 sm:h-[72px] sm:px-7 lg:px-10"
         >
           <Link
             href="/"
             aria-label="ClientPilot home"
             className="group flex shrink-0 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25"
           >
-            <span className="transition-transform duration-200 group-hover:-rotate-3 group-hover:scale-105 motion-reduce:transform-none">
-              <BrandMark />
+            <span className="transition-transform duration-200 group-hover:scale-105 motion-reduce:transform-none">
+              <BrandMark className="!shadow-none !ring-0" />
             </span>
-            <span className="text-[17px] font-bold tracking-[-0.05em] text-slate-950">
-              Client<span className="text-gray-600">Pilot</span>
+            <span className="text-[17px] font-bold tracking-[-0.05em] text-[#212529]">
+              Client<span className="text-[#495057]">Pilot</span>
             </span>
           </Link>
 
-          <div className="hidden items-center gap-1 md:flex">
+          <div className="hidden items-center gap-0.5 lg:flex xl:gap-1">
             {links.map(([label, href]) => {
               const active = isActive(pathname, href);
               return (
@@ -160,17 +163,17 @@ export default function Navbar() {
                   key={href}
                   href={href}
                   aria-current={active ? "page" : undefined}
-                  className={`relative rounded-xl px-3.5 py-2.5 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 lg:px-4 ${
+                  className={`relative whitespace-nowrap rounded-xl px-3 py-2.5 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25 xl:px-3.5 ${
                     active
-                      ? "bg-indigo-50/80 text-indigo-700"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+                      ? "bg-[#f1f3f5] text-[#212529]"
+                      : "text-[#495057] hover:bg-[#f8f9fa] hover:text-[#212529]"
                   }`}
                 >
                   {label}
                   {active ? (
                     <motion.span
                       layoutId="public-nav-indicator"
-                      className="absolute inset-x-4 -bottom-[13px] h-0.5 rounded-full bg-indigo-600"
+                      className="absolute inset-x-4 -bottom-[13px] h-0.5 rounded-full bg-[#495057]"
                       aria-hidden="true"
                     />
                   ) : null}
@@ -179,18 +182,19 @@ export default function Navbar() {
             })}
           </div>
 
-          <div className="hidden items-center gap-1.5 md:flex">
+          <div className="hidden items-center gap-1.5 lg:flex">
             {desktopAuthLinks}
           </div>
 
-          <div className="relative md:hidden" ref={menuRef}>
+          <div className="relative lg:hidden" ref={menuRef}>
             <button
+              ref={menuButtonRef}
               type="button"
               aria-expanded={menuOpen}
               aria-controls="mobile-navigation"
               aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
               onClick={() => setMenuOpen((open) => !open)}
-              className="flex size-10 items-center justify-center rounded-xl border border-[#c6cbd1] bg-white text-[#495057] shadow-sm transition hover:border-[#6c757d] hover:bg-[#f1f3f5] hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25"
+              className="flex size-10 items-center justify-center rounded-xl border border-[#c6cbd1] bg-white text-[#495057] transition-colors hover:border-[#6c757d] hover:bg-[#f1f3f5] hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25"
             >
               {menuOpen ? <X size={19} aria-hidden="true" /> : <Menu size={19} aria-hidden="true" />}
             </button>
@@ -202,7 +206,7 @@ export default function Navbar() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -6, scale: 0.98 }}
                   transition={{ duration: 0.16, ease: "easeOut" }}
-                  className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[min(20rem,calc(100vw-2rem))] origin-top-right rounded-2xl border border-slate-200 bg-white p-2.5 shadow-[var(--cp-shadow-popover)]"
+                  className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[min(21rem,calc(100vw-2rem))] origin-top-right rounded-2xl border border-slate-200 bg-white p-2.5 shadow-[var(--cp-shadow-popover)]"
                 >
                   <div className="space-y-1">
                     {links.map(([label, href]) => {
@@ -213,10 +217,10 @@ export default function Navbar() {
                           href={href}
                           aria-current={active ? "page" : undefined}
                           onClick={() => setMenuOpen(false)}
-                          className={`flex min-h-11 items-center rounded-xl px-3.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 ${
+                          className={`flex min-h-11 items-center rounded-xl px-3.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25 ${
                             active
-                              ? "bg-indigo-50 text-indigo-700"
-                              : "text-slate-700 hover:bg-slate-50 hover:text-indigo-700"
+                              ? "bg-[#f1f3f5] text-[#212529]"
+                              : "text-[#495057] hover:bg-[#f8f9fa] hover:text-[#212529]"
                           }`}
                         >
                           {label}
@@ -230,7 +234,7 @@ export default function Navbar() {
                         <Link
                           href="/dashboard"
                           onClick={() => setMenuOpen(false)}
-                          className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-indigo-700"
+                          className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3.5 text-sm font-semibold text-[#495057] transition-colors hover:bg-[#f8f9fa] hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25"
                         >
                           <LayoutDashboard size={16} aria-hidden="true" />
                           Dashboard
@@ -250,7 +254,7 @@ export default function Navbar() {
                         <Link
                           href="/login"
                           onClick={() => setMenuOpen(false)}
-                          className="flex min-h-11 items-center rounded-xl px-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-indigo-700"
+                          className="flex min-h-11 items-center rounded-xl px-3.5 text-sm font-semibold text-[#495057] transition-colors hover:bg-[#f8f9fa] hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25"
                         >
                           Sign in
                         </Link>
@@ -269,10 +273,22 @@ export default function Navbar() {
             </AnimatePresence>
           </div>
         </nav>
-        {logoutError ? (
-          <p role="alert" className="mx-auto max-w-7xl px-5 pb-2 text-right text-xs text-rose-700">
-            {logoutError}
-          </p>
+        {logoutError || state.status === "error" ? (
+          <div className="mx-auto flex max-w-7xl items-center justify-end gap-3 px-5 pb-2 text-right text-xs text-rose-700" role="alert">
+            <span>
+              {logoutError ||
+                (state.status === "error" ? state.message : "")}
+            </span>
+            {state.status === "error" ? (
+              <button
+                type="button"
+                onClick={() => void refresh()}
+                className="font-semibold underline underline-offset-2"
+              >
+                Retry
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </header>
     </MotionConfig>

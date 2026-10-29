@@ -3,13 +3,14 @@ import { PublicShell } from "@/components/layout/public-shell";
 import { AboutExperience } from "./about-experience";
 
 export const metadata: Metadata = {
-  title: "About ClientPilot | Clarity for client work",
+  title: "About: Clarity for client work",
   description:
-    "Learn how ClientPilot helps freelancers and small-agency owners organize clients, projects, tasks, deadlines, and delivery progress in one private workspace.",
+    "Discover why ClientPilot exists: to help freelancers and small agencies connect client context, project work, tasks, deadlines, and delivery progress.",
   alternates: { canonical: "/about" },
   openGraph: {
     title: "About ClientPilot | Clarity for client work",
-    description: "A focused workspace for keeping client relationships, project delivery, and task progress clear.",
+    description:
+      "A private workspace shaped around clear, connected client-focused delivery.",
     url: "/about",
     type: "website",
     images: [{ url: "/Collaborative Office Dashboard Meeting.png", width: 1536, height: 1024, alt: "A team discussing client work around a laptop." }],

@@ -29,7 +29,7 @@ export function ClientProjectList({ clientId }: { clientId: string }) {
           return;
         }
         if (requestError instanceof ApiError && requestError.status === 401) {
-          router.replace("/login");
+          router.replace("/");
           router.refresh();
           return;
         }

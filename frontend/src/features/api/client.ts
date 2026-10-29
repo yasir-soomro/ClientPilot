@@ -70,6 +70,15 @@ async function request(
 
   if (!response.ok) {
     const payload: unknown = await response.json().catch(() => null);
+    if (
+      response.status === 401 &&
+      path !== "/api/auth/login" &&
+      path !== "/api/auth/register"
+    ) {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("clientpilot:auth-expired"));
+      }
+    }
     throw new ApiError(errorMessage(payload, response.status), response.status);
   }
   return response;

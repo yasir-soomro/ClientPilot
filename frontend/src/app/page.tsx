@@ -6,16 +6,16 @@ import { LandingSections } from "@/components/main/landing-sections";
 import { PublicShell } from "@/components/layout/public-shell";
 
 export const metadata: Metadata = {
-  title: "ClientPilot | A clearer way to manage client work",
+  title: "ClientPilot | Client work, clearly connected",
   description:
-    "Manage client details, projects, tasks, and delivery progress in one private workspace built for freelancers and small agencies.",
+    "Keep client details, projects, tasks, and delivery progress connected in one private workspace for freelancers and small agencies.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "ClientPilot | A clearer way to manage client work",
+    title: "ClientPilot | Client work, clearly connected",
     description:
-      "A private workspace to organize clients, projects, and everyday delivery work.",
+      "One private workspace for client context, project plans, tasks, and delivery progress.",
     url: "/",
   },
 };

@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useState, type FormEvent } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { FormField } from "@/components/auth/form-field";
+import { PasswordInput } from "@/components/auth/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { registerOwner } from "@/features/auth/service";
@@ -31,7 +32,9 @@ export function RegisterForm() {
     };
     const validationErrors = validateRegisterInput(input);
     setErrors(validationErrors);
-    if (Object.keys(validationErrors).length > 0) {
+    const firstInvalidField = Object.keys(validationErrors)[0];
+    if (firstInvalidField) {
+      document.getElementById(firstInvalidField)?.focus();
       return;
     }
 
@@ -54,10 +57,10 @@ export function RegisterForm() {
   return (
     <AuthShell mode="register">
       <div className="mb-7">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#5969e8]">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#6c757d]">
           Make room for your best work
         </p>
-        <h2 className="text-3xl font-semibold tracking-[-0.035em] text-[#182230]">
+        <h2 className="text-3xl font-semibold tracking-[-0.035em] text-[#212529]">
           Create your account
         </h2>
         <p className="mt-2 text-sm leading-6 text-[#667085]">
@@ -65,7 +68,12 @@ export function RegisterForm() {
         </p>
       </div>
 
-      <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+      <form
+        className="space-y-4"
+        onSubmit={handleSubmit}
+        noValidate
+        aria-busy={loading}
+      >
         <AnimatePresence initial={false}>
           {apiError ? (
             <motion.div
@@ -110,6 +118,8 @@ export function RegisterForm() {
             type="text"
             autoComplete="name"
             maxLength={50}
+            required
+            disabled={loading}
             placeholder="Your name"
             aria-invalid={Boolean(errors.full_name)}
             aria-describedby={errors.full_name ? "full_name-error" : undefined}
@@ -123,6 +133,8 @@ export function RegisterForm() {
             type="email"
             autoComplete="email"
             inputMode="email"
+            required
+            disabled={loading}
             placeholder="you@example.com"
             aria-invalid={Boolean(errors.email)}
             aria-describedby={errors.email ? "email-error" : undefined}
@@ -135,13 +147,14 @@ export function RegisterForm() {
           error={errors.password}
           hint="Use 12–128 characters."
         >
-          <Input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             autoComplete="new-password"
             minLength={12}
             maxLength={128}
+            required
+            disabled={loading}
             placeholder="Create a secure password"
             aria-invalid={Boolean(errors.password)}
             aria-describedby={errors.password ? "password-error" : "password-hint"}
@@ -160,6 +173,8 @@ export function RegisterForm() {
             type="tel"
             autoComplete="tel"
             inputMode="tel"
+            required
+            disabled={loading}
             placeholder="+14155552671"
             aria-invalid={Boolean(errors.phone_number)}
             aria-describedby={

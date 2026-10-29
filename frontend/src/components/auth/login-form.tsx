@@ -6,14 +6,16 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useState, type FormEvent } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { FormField } from "@/components/auth/form-field";
+import { PasswordInput } from "@/components/auth/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { loginOwner } from "@/features/auth/service";
+import { useAuth } from "@/features/auth/session-context";
 import { validateLoginInput } from "@/features/auth/schema";
 import type { FieldErrors, LoginInput } from "@/features/auth/types";
 
 export function LoginForm() {
   const router = useRouter();
+  const { login } = useAuth();
   const [errors, setErrors] = useState<FieldErrors<keyof LoginInput>>({});
   const [apiError, setApiError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,13 +30,15 @@ export function LoginForm() {
     };
     const validationErrors = validateLoginInput(input);
     setErrors(validationErrors);
-    if (Object.keys(validationErrors).length > 0) {
+    const firstInvalidField = Object.keys(validationErrors)[0];
+    if (firstInvalidField) {
+      document.getElementById(firstInvalidField)?.focus();
       return;
     }
 
     setLoading(true);
     try {
-      await loginOwner(input);
+      await login(input);
       router.replace("/dashboard");
       router.refresh();
     } catch (error) {
@@ -51,10 +55,10 @@ export function LoginForm() {
   return (
     <AuthShell mode="login">
       <div className="mb-8">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#5969e8]">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#6c757d]">
           Welcome back
         </p>
-        <h2 className="text-3xl font-semibold tracking-[-0.035em] text-[#182230]">
+        <h2 className="text-3xl font-semibold tracking-[-0.035em] text-[#212529]">
           Sign in to your account
         </h2>
         <p className="mt-2 text-sm leading-6 text-[#667085]">
@@ -62,7 +66,12 @@ export function LoginForm() {
         </p>
       </div>
 
-      <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+      <form
+        className="space-y-5"
+        onSubmit={handleSubmit}
+        noValidate
+        aria-busy={loading}
+      >
         <AnimatePresence initial={false}>
           {apiError ? (
             <motion.div
@@ -85,6 +94,8 @@ export function LoginForm() {
             type="email"
             autoComplete="email"
             inputMode="email"
+            required
+            disabled={loading}
             placeholder="you@example.com"
             aria-invalid={Boolean(errors.email)}
             aria-describedby={errors.email ? "email-error" : undefined}
@@ -92,11 +103,12 @@ export function LoginForm() {
         </FormField>
 
         <FormField id="password" label="Password" error={errors.password}>
-          <Input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             autoComplete="current-password"
+            required
+            disabled={loading}
             placeholder="Enter your password"
             aria-invalid={Boolean(errors.password)}
             aria-describedby={errors.password ? "password-error" : undefined}
@@ -128,7 +140,7 @@ export function LoginForm() {
         Don’t have an account?{" "}
         <Link
           href="/register"
-          className="font-semibold text-[#4355d9] hover:text-[#3343bc] focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5969e8]"
+          className="rounded-sm font-semibold text-[#343a40] underline decoration-[#adb5bd] underline-offset-4 hover:text-[#212529] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c757d]/40"
         >
           Create one
         </Link>

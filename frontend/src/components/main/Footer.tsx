@@ -30,20 +30,20 @@ export default function Footer() {
               aria-label="ClientPilot home"
               className="group inline-flex items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25"
             >
-              <span className="transition-transform duration-200 group-hover:-rotate-3 group-hover:scale-105 motion-reduce:transform-none">
-                <BrandMark small />
+              <span className="transition-transform duration-200 group-hover:scale-105 motion-reduce:transform-none">
+                <BrandMark small className="!shadow-none !ring-0" />
               </span>
-              <span className="text-[15px] font-bold tracking-[-0.05em] text-slate-950">
-                Client<span className="text-gray-600">Pilot</span>
+              <span className="text-[15px] font-bold tracking-[-0.05em] text-[#212529]">
+                Client<span className="text-[#495057]">Pilot</span>
               </span>
             </Link>
-            <p className="mt-4 max-w-xs text-sm leading-6 text-slate-500">
-              A focused private workspace for freelancers and small agencies to
-              keep client delivery clear and connected.
+            <p className="mt-4 max-w-xs text-sm leading-6 text-[#495057]">
+              Keep client details, project plans, and delivery progress
+              connected in one private workspace.
             </p>
             <Link
               href="/about"
-              className="mt-4 inline-flex items-center gap-1.5 rounded-md text-sm font-semibold text-indigo-700 transition hover:text-indigo-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20"
+              className="mt-4 inline-flex min-h-10 items-center gap-1.5 rounded-md text-sm font-semibold text-[#343a40] transition-colors hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25"
             >
               Learn about ClientPilot
               <ArrowUpRight size={15} aria-hidden="true" />
@@ -51,7 +51,7 @@ export default function Footer() {
           </div>
 
           <nav aria-label="Product links">
-            <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+            <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-[#6c757d]">
               Explore
             </h2>
             <ul className="mt-4 space-y-2.5">
@@ -59,12 +59,12 @@ export default function Footer() {
                 <li key={href}>
                   <Link
                     href={href}
-                    className="group inline-flex min-h-8 items-center gap-2.5 rounded-md text-sm font-medium text-slate-600 transition-colors hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20"
+                    className="group inline-flex min-h-10 items-center gap-2.5 rounded-md text-sm font-medium text-[#495057] transition-colors hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25"
                   >
                     <Icon
                       size={15}
                       strokeWidth={1.8}
-                      className="text-slate-400 transition-colors group-hover:text-indigo-600"
+                      className="text-[#6c757d] transition-colors group-hover:text-[#343a40]"
                       aria-hidden="true"
                     />
                     {label}
@@ -75,7 +75,7 @@ export default function Footer() {
           </nav>
 
           <nav aria-label="Account links">
-            <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+            <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-[#6c757d]">
               Your workspace
             </h2>
             <ul className="mt-4 space-y-2.5">
@@ -83,12 +83,12 @@ export default function Footer() {
                 <li key={href}>
                   <Link
                     href={href}
-                    className="group inline-flex min-h-8 items-center gap-2.5 rounded-md text-sm font-medium text-slate-600 transition-colors hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20"
+                    className="group inline-flex min-h-10 items-center gap-2.5 rounded-md text-sm font-medium text-[#495057] transition-colors hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25"
                   >
                     <Icon
                       size={15}
                       strokeWidth={1.8}
-                      className="text-slate-400 transition-colors group-hover:text-indigo-600"
+                      className="text-[#6c757d] transition-colors group-hover:text-[#343a40]"
                       aria-hidden="true"
                     />
                     {label}
@@ -99,7 +99,7 @@ export default function Footer() {
           </nav>
         </div>
 
-        <div className="mt-10 flex flex-col gap-2 border-t border-slate-100 pt-5 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col gap-2 border-t border-slate-200 pt-5 text-xs text-[#6c757d] sm:flex-row sm:items-center sm:justify-between">
           <p>© 2026 ClientPilot. All rights reserved.</p>
           <p>Private by design. Built for your client work.</p>
         </div>

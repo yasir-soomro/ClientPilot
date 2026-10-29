@@ -5,12 +5,12 @@ import { PublicShell } from "@/components/layout/public-shell";
 export const metadata: Metadata = {
   title: "How It Works",
   description:
-    "See how ClientPilot connects client details, projects, tasks, deadlines, and delivery progress in one private workspace.",
+    "Follow the ClientPilot workflow from client records to connected projects, actionable tasks, due dates, and delivery progress.",
   alternates: { canonical: "/how-it-works" },
   openGraph: {
     title: "How It Works | ClientPilot",
     description:
-      "From client details to completed work: explore the ClientPilot workflow for clients, projects, tasks, and progress.",
+      "See how ClientPilot keeps client context, project work, task status, due dates, and delivery progress connected.",
     url: "/how-it-works",
     type: "website",
     images: [

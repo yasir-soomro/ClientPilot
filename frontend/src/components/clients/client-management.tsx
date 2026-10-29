@@ -86,7 +86,7 @@ export function ClientManagement({
   const handleApiError = useCallback(
     (error: unknown): string => {
       if (error instanceof ApiError && error.status === 401) {
-        router.replace("/login");
+        router.replace("/");
         router.refresh();
         return "Your session has expired. Redirecting to sign in.";
       }
