@@ -1,10 +1,12 @@
-import { requestJson } from "../api/client.ts";
+import { requestJson, requestNoContent } from "../api/client.ts";
+import { parseList, parseRecord } from "../api/validation.ts";
 import type { Client, ClientFields } from "@/features/clients/types";
 
 function isClient(payload: unknown): payload is Client {
   if (typeof payload !== "object" || payload === null) {
     return false;
   }
+
   return (
     "id" in payload &&
     typeof payload.id === "string" &&
@@ -21,42 +23,37 @@ function isClient(payload: unknown): payload is Client {
   );
 }
 
-function parseClient(payload: unknown): Client {
-  if (!isClient(payload)) {
-    throw new Error("The server returned an invalid client response.");
-  }
-  return payload;
-}
-
 export async function listClients(): Promise<Client[]> {
   const payload = await requestJson("/api/clients");
-  if (!Array.isArray(payload)) {
-    throw new Error("The server returned an invalid client list.");
-  }
-  return payload.map(parseClient);
+  return parseList(payload, "client", isClient);
 }
 
 export async function getClient(clientId: string): Promise<Client> {
-  return parseClient(await requestJson(`/api/clients/${clientId}`));
+  const payload = await requestJson(`/api/clients/${clientId}`);
+  return parseRecord(payload, "client", isClient);
 }
 
 export async function createClient(fields: ClientFields): Promise<Client> {
-  return parseClient(
-    await requestJson("/api/clients", {
-      method: "POST",
-      body: JSON.stringify(fields),
-    }),
-  );
+  const payload = await requestJson("/api/clients", {
+    method: "POST",
+    body: JSON.stringify(fields),
+  });
+  return parseRecord(payload, "client", isClient);
 }
 
 export async function updateClient(
   clientId: string,
   fields: ClientFields,
 ): Promise<Client> {
-  return parseClient(
-    await requestJson(`/api/clients/${clientId}`, {
-      method: "PATCH",
-      body: JSON.stringify(fields),
-    }),
-  );
+  const payload = await requestJson(`/api/clients/${clientId}`, {
+    method: "PATCH",
+    body: JSON.stringify(fields),
+  });
+  return parseRecord(payload, "client", isClient);
+}
+
+export async function deleteClient(clientId: string): Promise<void> {
+  await requestNoContent(`/api/clients/${encodeURIComponent(clientId)}`, {
+    method: "DELETE",
+  });
 }

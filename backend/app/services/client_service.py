@@ -77,3 +77,8 @@ class ClientService:
         self.db.commit()
         self.db.refresh(client)
         return client
+
+    def delete(self, client_id: UUID, owner_id: str) -> None:
+        client = self.get_for_owner(client_id, owner_id)
+        self.repository.delete(client)
+        self.db.commit()

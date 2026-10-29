@@ -1,33 +1,13 @@
-import { requestJson } from "../api/client.ts";
+import { requestJson, requestNoContent } from "../api/client.ts";
+import { isCalendarDate, parseList, parseRecord } from "../api/validation.ts";
 import { isProjectStatus } from "./types.ts";
 import type { Project, ProjectFields } from "./types";
-
-function isCalendarDate(value: string): boolean {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) {
-    return false;
-  }
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  if (year < 1) {
-    return false;
-  }
-  const date = new Date(Date.UTC(year, month - 1, day));
-  if (year < 100) {
-    date.setUTCFullYear(year);
-  }
-  return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
-  );
-}
 
 function isProject(payload: unknown): payload is Project {
   if (typeof payload !== "object" || payload === null) {
     return false;
   }
+
   return (
     "id" in payload &&
     typeof payload.id === "string" &&
@@ -49,44 +29,38 @@ function isProject(payload: unknown): payload is Project {
   );
 }
 
-function parseProject(payload: unknown): Project {
-  if (!isProject(payload)) {
-    throw new Error("The server returned an invalid project response.");
-  }
-  return payload;
-}
-
 export async function listProjects(): Promise<Project[]> {
   const payload = await requestJson("/api/projects");
-  if (!Array.isArray(payload)) {
-    throw new Error("The server returned an invalid project list.");
-  }
-  return payload.map(parseProject);
+  return parseList(payload, "project", isProject);
 }
 
 export async function getProject(projectId: string): Promise<Project> {
-  return parseProject(
-    await requestJson(`/api/projects/${encodeURIComponent(projectId)}`),
-  );
+  const payload = await requestJson(`/api/projects/${encodeURIComponent(projectId)}`);
+  return parseRecord(payload, "project", isProject);
 }
 
 export async function createProject(fields: ProjectFields): Promise<Project> {
-  return parseProject(
-    await requestJson("/api/projects", {
-      method: "POST",
-      body: JSON.stringify(fields),
-    }),
-  );
+  const payload = await requestJson("/api/projects", {
+    method: "POST",
+    body: JSON.stringify(fields),
+  });
+  return parseRecord(payload, "project", isProject);
 }
 
 export async function updateProject(
   projectId: string,
   fields: ProjectFields,
 ): Promise<Project> {
-  return parseProject(
-    await requestJson(`/api/projects/${encodeURIComponent(projectId)}`, {
-      method: "PATCH",
-      body: JSON.stringify(fields),
-    }),
+  const payload = await requestJson(`/api/projects/${encodeURIComponent(projectId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(fields),
+  });
+  return parseRecord(payload, "project", isProject);
+}
+
+export async function deleteProject(projectId: string): Promise<void> {
+  await requestNoContent(
+    `/api/projects/${encodeURIComponent(projectId)}`,
+    { method: "DELETE" },
   );
 }

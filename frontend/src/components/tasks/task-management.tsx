@@ -8,7 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ApiError } from "@/features/api/client";
-import { createTask, listTasks, updateTaskStatus } from "@/features/tasks/service";
+import {
+  createTask,
+  deleteTask,
+  listTasks,
+  updateTaskStatus,
+} from "@/features/tasks/service";
 import { taskFieldsFromForm, validateTaskForm } from "@/features/tasks/schema";
 import { TASK_STATUSES, type Task, type TaskFieldErrors, type TaskStatus } from "@/features/tasks/types";
 
@@ -26,6 +31,7 @@ export function TaskManagement({ projectId }: { projectId: string }) {
   const [success, setSuccess] = useState("");
   const [creating, setCreating] = useState(false);
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
   const [statusError, setStatusError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -116,6 +122,25 @@ export function TaskManagement({ projectId }: { projectId: string }) {
     }
   }
 
+  async function handleDelete(task: Task) {
+    if (!window.confirm(`Delete "${task.title}"? This cannot be undone.`)) {
+      return;
+    }
+
+    setDeletingTaskId(task.id);
+    setStatusError("");
+    setSuccess("");
+    try {
+      await deleteTask(projectId, task.id);
+      setTasks((current) => current.filter((item) => item.id !== task.id));
+      setSuccess(`${task.title} was deleted.`);
+    } catch (error) {
+      setStatusError(handleError(error));
+    } finally {
+      setDeletingTaskId(null);
+    }
+  }
+
   return (
     <section aria-labelledby="tasks-heading" className="lg:col-span-2">
       <div className="mb-4 flex items-center justify-between gap-4">
@@ -123,7 +148,9 @@ export function TaskManagement({ projectId }: { projectId: string }) {
         <span className="rounded-full bg-[#f3f4f8] px-2.5 py-1 text-xs font-semibold text-[#667085]">{tasks.length} {tasks.length === 1 ? "task" : "tasks"}</span>
       </div>
 
-      <button type="button" onClick={() => setCreateOpen(true)} className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">+ Add task</button>
+      <Button type="button" onClick={() => setCreateOpen(true)} className="mt-5 !w-auto">
+        + Add task
+      </Button>
       <Dialog open={createOpen} title="Add a task" description="Add the next actionable step for this project." onClose={() => setCreateOpen(false)}>
       <form className="grid gap-4 rounded-2xl border border-[#e7e9f0] bg-[#fafbfc] p-4 sm:p-5 md:grid-cols-2" onSubmit={handleCreate} noValidate>
         <div className="md:col-span-2">
@@ -132,14 +159,14 @@ export function TaskManagement({ projectId }: { projectId: string }) {
           </FormField>
         </div>
         <FormField id="new-task-description" label="Description (optional)" error={fieldErrors.description}>
-          <textarea id="new-task-description" name="description" maxLength={5000} rows={3} aria-invalid={Boolean(fieldErrors.description)} className="w-full rounded-xl border border-[#dfe2ea] bg-white px-4 py-3 text-sm text-[#182230] shadow-[0_1px_2px_rgba(16,24,40,0.03)] outline-none transition hover:border-[#c7cad5] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" />
+          <textarea id="new-task-description" name="description" maxLength={5000} rows={3} aria-invalid={Boolean(fieldErrors.description)} className="cp-control min-h-24 w-full px-4 py-3 text-sm" />
         </FormField>
         <FormField id="new-task-due-date" label="Due date (optional)" error={fieldErrors.due_date}>
           <Input id="new-task-due-date" name="due_date" type="date" aria-invalid={Boolean(fieldErrors.due_date)} />
         </FormField>
         <div className="md:col-span-2">
-          {formError ? <p role="alert" className="mb-3 text-sm text-[#b42318]">{formError}</p> : null}
-          {success ? <p role="status" className="mb-3 text-sm text-[#067647]">{success}</p> : null}
+          {formError ? <p role="alert" className="cp-alert-error mb-3 px-4 py-3 text-sm">{formError}</p> : null}
+          {success ? <p role="status" className="cp-alert-success mb-3 px-4 py-3 text-sm">{success}</p> : null}
           <Button loading={creating} className="md:w-auto">Create task</Button>
         </div>
       </form>
@@ -149,11 +176,11 @@ export function TaskManagement({ projectId }: { projectId: string }) {
         <p role="status" className="mt-4 text-sm text-[#667085]">Loading tasks…</p>
       ) : listError ? (
         <div role="alert" className="mt-4">
-          <p className="text-sm text-[#b42318]">{listError}</p>
-          <button type="button" onClick={() => void refreshTasks()} className="mt-2 text-sm font-semibold text-[#4355d9] hover:underline">Try again</button>
+          <p className="cp-alert-error px-4 py-3 text-sm">{listError}</p>
+          <button type="button" onClick={() => void refreshTasks()} className="mt-2 text-sm font-semibold text-[#343a40] transition-colors hover:text-[#212529] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c757d]/40">Try again</button>
         </div>
       ) : tasks.length === 0 ? (
-        <p className="mt-4 rounded-xl bg-[#f7f8fc] p-4 text-sm text-[#667085]">No tasks yet. Add the first task for this project.</p>
+        <p className="cp-empty mt-4 p-4 text-sm">No tasks yet. Add the first task for this project.</p>
       ) : (
         <ul className="mt-4 divide-y divide-[#eaecf0] rounded-xl border border-[#eaecf0] bg-white px-4">
           {[...tasks].sort((a, b) => {
@@ -172,15 +199,18 @@ export function TaskManagement({ projectId }: { projectId: string }) {
               </div>
               <label className="flex shrink-0 items-center gap-2 text-sm text-[#667085]">
                 <span className="sr-only">Status for {task.title}</span>
-                <select value={task.status} disabled={updatingTaskId === task.id} onChange={(event) => void handleStatusChange(task, event.currentTarget.value)} className="min-h-10 rounded-lg border border-[#dfe2ea] bg-white px-3 py-2 text-sm capitalize text-[#344054] shadow-sm transition hover:border-[#c7cad5] focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 disabled:opacity-60">
+                <select value={task.status} disabled={updatingTaskId === task.id || deletingTaskId === task.id} onChange={(event) => void handleStatusChange(task, event.currentTarget.value)} className="cp-control min-h-10 px-3 py-2 text-sm capitalize">
                   {TASK_STATUSES.map((status) => <option key={status} value={status}>{statusLabel(status)}</option>)}
                 </select>
+                <button type="button" onClick={() => void handleDelete(task)} disabled={deletingTaskId === task.id || updatingTaskId === task.id} className="min-h-10 rounded-lg border border-[#c6cbd1] px-3 text-xs font-semibold text-[#343a40] transition hover:border-[#6c757d] hover:bg-[#f3f4f5] hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25 disabled:opacity-60">
+                  {deletingTaskId === task.id ? "Deleting…" : "Delete"}
+                </button>
               </label>
             </li>
           ))}
         </ul>
       )}
-      {statusError ? <p role="alert" className="mt-3 text-sm text-[#b42318]">{statusError}</p> : null}
+      {statusError ? <p role="alert" className="cp-alert-error mt-3 px-4 py-3 text-sm">{statusError}</p> : null}
     </section>
   );
 }

@@ -3,9 +3,9 @@ import {
   ApiError,
   requestJson,
   requestNoContent,
-} from "@/features/api/client";
+} from "../api/client.ts";
 
-export { ApiError as AuthApiError } from "@/features/api/client";
+export { ApiError as AuthApiError } from "../api/client.ts";
 
 function isOwner(payload: unknown): payload is Owner {
   if (typeof payload !== "object" || payload === null) {
@@ -75,30 +75,4 @@ export function getCurrentOwner(): Promise<Owner> {
 
 export async function logoutOwner(): Promise<void> {
   await requestNoContent("/api/auth/logout", { method: "POST" });
-}
-
-export async function verifyEmail(email: string, code: string): Promise<Owner> {
-  const payload = await requestJson("/api/auth/verify-email", {
-    method: "POST",
-    body: JSON.stringify({ email: email.trim().toLowerCase(), code }),
-  });
-  if (!isOwner(payload)) {
-    throw new Error("The server returned an invalid response.");
-  }
-  return payload;
-}
-
-export async function resendVerification(email: string): Promise<void> {
-  await requestNoContent("/api/auth/resend-verification", {
-    method: "POST",
-    body: JSON.stringify({ email: email.trim().toLowerCase() }),
-  });
-}
-
-export async function getDevelopmentVerificationCode(email: string): Promise<string> {
-  const payload = await requestJson(`/api/auth/dev/verification-code?email=${encodeURIComponent(email.trim().toLowerCase())}`);
-  if (typeof payload !== "object" || payload === null || !("code" in payload) || typeof payload.code !== "string") {
-    throw new Error("No active development verification code is available.");
-  }
-  return payload.code;
 }

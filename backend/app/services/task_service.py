@@ -73,3 +73,8 @@ class TaskService:
         self.db.commit()
         self.db.refresh(task)
         return task
+
+    def delete(self, project_id: UUID, task_id: UUID, owner_id: str) -> None:
+        task = self.get_for_project(project_id, task_id, owner_id)
+        self.tasks.delete(task)
+        self.db.commit()

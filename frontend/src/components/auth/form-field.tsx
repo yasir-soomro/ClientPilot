@@ -17,12 +17,12 @@ export function FormField({
 }: FormFieldProps) {
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="block text-sm font-semibold text-slate-700">
+      <label htmlFor={id} className="block text-sm font-semibold tracking-[-0.01em] text-slate-800">
         {label}
       </label>
       {children}
       {error ? (
-        <p id={`${id}-error`} className="text-xs leading-5 text-rose-700">
+        <p id={`${id}-error`} className="text-xs leading-5 text-rose-700" role="alert">
           {error}
         </p>
       ) : hint ? (

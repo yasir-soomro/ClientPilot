@@ -46,7 +46,6 @@ export function DashboardOverview() {
   const workspace = summarizeWorkspace(clients, projects);
   const taskSummary = useMemo(() => summarizeTasks(tasks, projects), [projects, tasks]);
   const clientNames = useMemo(() => new Map(clients.map((client) => [client.id, client.name])), [clients]);
-  const projectById = useMemo(() => new Map(projects.map((project) => [project.id, project])), [projects]);
   const metrics = [
     { label: "Total clients", value: workspace.totalClients, description: "Owner-scoped client records", href: "/clients", icon: Users, tone: "bg-indigo-50 text-indigo-600" },
     { label: "Active projects", value: workspace.activeProjects, description: "Projects currently in progress", href: "/projects", icon: BriefcaseBusiness, tone: "bg-sky-50 text-sky-600" },
@@ -54,15 +53,182 @@ export function DashboardOverview() {
     { label: "Overdue tasks", value: taskSummary.overdueTasks, description: "Incomplete tasks past due", href: "/projects", icon: CircleAlert, tone: "bg-rose-50 text-rose-600" },
   ];
 
-  return <MotionConfig reducedMotion="user"><motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, ease: "easeOut" }}>
-    <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><p className="cp-eyebrow">Workspace overview</p><h1 className="mt-2 text-3xl font-bold tracking-[-0.045em] text-[#182230] sm:text-[38px]">Good work, organized.</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-[#667085]">See the work that is moving, what needs attention, and where every client stands.</p></div><div className="flex flex-wrap gap-3"><Link href="/clients" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#e1e4ec] bg-white px-4 text-sm font-semibold text-[#344054] shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/40">View clients</Link><Link href="/projects" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">View projects</Link></div></div>
-    {loading ? <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" role="status" aria-label="Loading dashboard">{[1, 2, 3, 4].map((item) => <div key={item} className="cp-card h-36 cp-skeleton" />)}</div> : error ? <div className="mt-8 rounded-2xl border border-rose-200 bg-white p-6" role="alert"><p className="text-sm text-rose-700">{error}</p><button type="button" onClick={() => { setLoading(true); setRetry((value) => value + 1); }} className="mt-3 text-sm font-semibold text-indigo-600 hover:underline">Try again</button></div> : <>
-      <section aria-label="Workspace metrics" className="mt-9 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{metrics.map((metric) => <motion.div key={metric.label} whileHover={{ y: -2 }}><Link href={metric.href} className="block rounded-2xl border border-[#e7e9f0] bg-white p-5 shadow-sm transition hover:border-indigo-200 hover:shadow-lg sm:p-6"><div className="flex items-center justify-between"><p className="text-sm font-semibold text-[#667085]">{metric.label}</p><span className={`flex size-10 items-center justify-center rounded-xl ${metric.tone}`}><metric.icon size={19} aria-hidden="true" /></span></div><p className="mt-4 text-[34px] font-bold tracking-[-0.045em] text-[#182230]">{metric.value}</p><p className="mt-1 flex items-center justify-between text-xs text-[#98a2b3]"><span>{metric.description}</span><ArrowUpRight size={15} aria-hidden="true" /></p></Link></motion.div>)}</section>
-      <section className="mt-7 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="rounded-2xl border border-[#e7e9f0] bg-white p-5 shadow-sm sm:p-6"><div className="flex items-center justify-between"><div><h2 className="font-semibold text-[#182230]">Task status</h2><p className="mt-1 text-sm text-[#667085]">A live breakdown from your projects</p></div><BarChart3 size={19} className="text-indigo-500" aria-hidden="true" /></div>{tasks.length === 0 ? <p className="mt-6 rounded-xl bg-[#f7f8fc] p-4 text-sm leading-6 text-[#667085]">No tasks yet. Open a project to add the first delivery task.</p> : <div className="mt-6 space-y-4">{(["todo", "in_progress", "done"] as const).map((status) => { const count = taskSummary.statusCounts[status]; const percent = Math.round((count / tasks.length) * 100); return <div key={status}><div className="flex justify-between text-sm"><span className="font-medium capitalize text-[#344054]">{prettyStatus(status)}</span><span className="text-[#667085]">{count} <span className="text-xs">({percent}%)</span></span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${status === "done" ? "bg-emerald-500" : status === "in_progress" ? "bg-indigo-500" : "bg-slate-400"}`} style={{ width: `${percent}%` }} /></div></div>; })}</div>}</div>
-        <div className="rounded-2xl border border-[#e7e9f0] bg-white p-5 shadow-sm sm:p-6"><div className="flex items-center justify-between"><div><h2 className="font-semibold text-[#182230]">Next up</h2><p className="mt-1 text-sm text-[#667085]">Prioritized incomplete tasks</p></div><CalendarClock size={19} className="text-amber-500" aria-hidden="true" /></div>{taskSummary.upcomingTasks.length === 0 ? <p className="mt-6 rounded-xl bg-[#f7f8fc] p-4 text-sm leading-6 text-[#667085]">No upcoming tasks. Add due dates to keep delivery visible.</p> : <ul className="mt-4 space-y-2">{taskSummary.upcomingTasks.map((task) => <li key={task.id}><Link href={`/projects/${task.project_id}`} className="flex items-center gap-3 rounded-xl p-3 transition hover:bg-indigo-50/60"><span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600"><CheckCircle2 size={16} aria-hidden="true" /></span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-[#344054]">{task.title}</span><span className="mt-0.5 block truncate text-xs text-[#667085]">{clientNames.get(projectById.get(task.project_id)?.client_id ?? "") ?? "Project task"} · Due {dateLabel(task.due_date)}</span></span><ArrowUpRight size={15} className="text-[#98a2b3]" aria-hidden="true" /></Link></li>)}</ul>}</div>
-      </section>
-      <section className="mt-7 rounded-2xl border border-[#e7e9f0] bg-white p-5 shadow-sm sm:p-6"><div className="flex items-center justify-between"><div><h2 className="font-semibold text-[#182230]">Project progress</h2><p className="mt-1 text-sm text-[#667085]">Completion calculated from each project&apos;s tasks</p></div><Link href="/projects" className="text-sm font-semibold text-indigo-600 hover:underline">View all</Link></div>{projects.length === 0 ? <p className="mt-6 rounded-xl bg-[#f7f8fc] p-4 text-sm text-[#667085]">Create a project to start tracking progress.</p> : <div className="mt-5 grid gap-4 md:grid-cols-2">{taskSummary.projectProgress.slice(0, 6).map(({ project, total, progress }) => <Link href={`/projects/${project.id}`} key={project.id} className="rounded-xl border border-slate-100 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/30"><div className="flex items-center justify-between gap-3"><span className="truncate text-sm font-semibold text-[#344054]">{project.name}</span><span className="shrink-0 text-sm font-semibold text-indigo-600">{progress}%</span></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${progress}%` }} /></div><p className="mt-2 text-xs text-[#667085]">{total} {total === 1 ? "task" : "tasks"} · {prettyStatus(project.status)}</p></Link>)}</div>}</section>
-    </>}
-  </motion.div></MotionConfig>;
+  return (
+    <MotionConfig reducedMotion="user">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.28, ease: "easeOut" }}
+      >
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+          <div>
+            <p className="cp-eyebrow">Workspace overview</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-[-0.045em] text-[#182230] sm:text-[38px]">
+              Good work, organized.
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#667085]">
+              See the work that is moving, what needs attention, and where every client stands.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/clients" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#c6cbd1] bg-white px-4 text-sm font-semibold text-[#343a40] shadow-sm transition hover:border-[#6c757d] hover:bg-[#f3f4f5] hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25">
+              View clients
+            </Link>
+            <Link href="/projects" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#343a40] bg-[#343a40] px-4 text-sm font-semibold text-white shadow-sm transition hover:border-[#212529] hover:bg-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/30">
+              View projects
+            </Link>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" role="status" aria-label="Loading dashboard">
+            {[1, 2, 3, 4].map((item) => <div key={item} className="cp-card cp-skeleton h-36" />)}
+          </div>
+        ) : error ? (
+          <div className="cp-alert-error mt-8 p-6" role="alert">
+            <p className="text-sm">{error}</p>
+            <button type="button" onClick={() => { setLoading(true); setRetry((value) => value + 1); }} className="mt-3 text-sm font-semibold text-[#343a40] underline underline-offset-4 transition-colors hover:text-[#212529] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c757d]/40">
+              Try again
+            </button>
+          </div>
+        ) : (
+          <>
+            <section aria-label="Workspace metrics" className="mt-9 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {metrics.map((metric, index) => (
+                <motion.div
+                  key={metric.label}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.055 }}
+                  whileHover={{ y: -2 }}
+                >
+                  <Link href={metric.href} className="cp-card block p-5 transition hover:border-indigo-200 hover:shadow-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 sm:p-6">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-[#667085]">{metric.label}</p>
+                      <span className={`flex size-10 items-center justify-center rounded-xl ${metric.tone}`}>
+                        <metric.icon size={19} aria-hidden="true" />
+                      </span>
+                    </div>
+                    <p className="mt-4 text-[34px] font-bold tracking-[-0.045em] text-[#182230]">{metric.value}</p>
+                    <p className="mt-1 flex items-center justify-between gap-2 text-xs text-[#98a2b3]">
+                      <span>{metric.description}</span>
+                      <ArrowUpRight size={15} aria-hidden="true" />
+                    </p>
+                  </Link>
+                </motion.div>
+              ))}
+            </section>
+
+            <section className="mt-7 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+              <div className="cp-card p-5 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="font-semibold text-[#182230]">Task status</h2>
+                    <p className="mt-1 text-sm text-[#667085]">A live breakdown from your projects</p>
+                  </div>
+                  <BarChart3 size={19} className="text-indigo-500" aria-hidden="true" />
+                </div>
+                {tasks.length === 0 ? (
+                  <div className="cp-empty mt-6 p-4 text-sm leading-6">
+                    No tasks yet. Open a project to add the first delivery task.
+                    {" "}<Link href="/projects" className="font-semibold text-indigo-700 underline-offset-4 hover:underline">Browse projects</Link>
+                  </div>
+                ) : (
+                  <div className="mt-6 space-y-5">
+                    {(["todo", "in_progress", "done"] as const).map((status) => {
+                      const count = taskSummary.statusCounts[status];
+                      const percent = Math.round((count / tasks.length) * 100);
+                      return (
+                        <div key={status}>
+                          <div className="flex justify-between gap-3 text-sm">
+                            <span className="font-medium capitalize text-[#344054]">{prettyStatus(status)}</span>
+                            <span className="text-[#667085]">{count} <span className="text-xs">({percent}%)</span></span>
+                          </div>
+                          <div
+                            className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"
+                            role="progressbar"
+                            aria-label={`${prettyStatus(status)} tasks`}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-valuenow={percent}
+                          >
+                            <div className={`h-full rounded-full transition-[width] duration-500 ${status === "done" ? "bg-emerald-500" : status === "in_progress" ? "bg-indigo-500" : "bg-slate-400"}`} style={{ width: `${percent}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="cp-card p-5 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="font-semibold text-[#182230]">Next up</h2>
+                    <p className="mt-1 text-sm text-[#667085]">Prioritized incomplete tasks</p>
+                  </div>
+                  <CalendarClock size={19} className="text-amber-500" aria-hidden="true" />
+                </div>
+                {taskSummary.upcomingTasks.length === 0 ? (
+                  <p className="cp-empty mt-6 p-4 text-sm leading-6">
+                    No upcoming tasks. Add due dates to keep delivery visible.
+                  </p>
+                ) : (
+                  <ul className="mt-4 space-y-1">
+                    {taskSummary.upcomingTasks.map((task) => (
+                      <li key={task.id}>
+                        <Link href={`/projects/${task.project_id}`} className="flex items-center gap-3 rounded-xl p-3 transition hover:bg-indigo-50/60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20">
+                          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                            <CheckCircle2 size={16} aria-hidden="true" />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-semibold text-[#344054]">{task.title}</span>
+                            <span className="mt-0.5 block truncate text-xs text-[#667085]">{clientNames.get(taskSummary.projectById.get(task.project_id)?.client_id ?? "") ?? "Project task"} · Due {dateLabel(task.due_date)}</span>
+                          </span>
+                          <ArrowUpRight size={15} className="text-[#98a2b3]" aria-hidden="true" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </section>
+
+            <section className="cp-card mt-7 p-5 sm:p-6">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="font-semibold text-[#182230]">Project progress</h2>
+                  <p className="mt-1 text-sm text-[#667085]">Completion calculated from each project&apos;s tasks</p>
+                </div>
+                <Link href="/projects" className="shrink-0 text-sm font-semibold text-indigo-600 hover:underline focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20">
+                  View all
+                </Link>
+              </div>
+              {projects.length === 0 ? (
+                <p className="cp-empty mt-6 p-4 text-sm">
+                  Create a project to start tracking progress.
+                  {" "}<Link href="/projects" className="font-semibold text-indigo-700 underline-offset-4 hover:underline">Create a project</Link>
+                </p>
+              ) : (
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  {taskSummary.projectProgress.slice(0, 6).map(({ project, total, progress }) => (
+                    <Link href={`/projects/${project.id}`} key={project.id} className="rounded-xl border border-slate-100 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/30 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="truncate text-sm font-semibold text-[#344054]">{project.name}</span>
+                        <span className="shrink-0 text-sm font-semibold text-indigo-600">{progress}%</span>
+                      </div>
+                      <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-label={`${project.name} completion`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
+                        <div className="h-full rounded-full bg-indigo-500 transition-[width] duration-500" style={{ width: `${progress}%` }} />
+                      </div>
+                      <p className="mt-2 text-xs text-[#667085]">{total} {total === 1 ? "task" : "tasks"} · {prettyStatus(project.status)}</p>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
+          </>
+        )}
+      </motion.div>
+    </MotionConfig>
+  );
 }

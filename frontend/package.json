@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/client-schema.test.mjs tests/client-service.test.mjs tests/project-schema.test.mjs tests/project-service.test.mjs tests/dashboard-summary.test.mjs"
+    "test": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/auth-service.test.mjs tests/client-schema.test.mjs tests/client-service.test.mjs tests/project-schema.test.mjs tests/project-service.test.mjs tests/task-schema.test.mjs tests/task-service.test.mjs tests/dashboard-summary.test.mjs"
   },
   "dependencies": {
     "framer-motion": "^14.6.0",

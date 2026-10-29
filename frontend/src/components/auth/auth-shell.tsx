@@ -13,7 +13,7 @@ export function AuthShell({ children, mode }: AuthShellProps) {
 
   return (
     <MotionConfig reducedMotion="user">
-    <main className="min-h-screen bg-[#f7f8fc] lg:grid lg:grid-cols-[minmax(0,1.02fr)_minmax(460px,0.98fr)]">
+    <main className="min-h-screen bg-[var(--cp-background)] lg:grid lg:grid-cols-[minmax(0,1.02fr)_minmax(460px,0.98fr)]">
       <aside className="relative hidden min-h-screen overflow-hidden bg-[#111735] px-10 py-9 text-white lg:flex lg:flex-col lg:justify-between xl:px-16 xl:py-12 2xl:px-20">
         <div aria-hidden="true" className="absolute inset-0">
           <div className="absolute -left-40 -top-32 size-[34rem] rounded-full bg-indigo-500/25 blur-3xl" />
@@ -26,7 +26,7 @@ export function AuthShell({ children, mode }: AuthShellProps) {
           <span className="transition-transform duration-200 group-hover:-rotate-3 group-hover:scale-105 motion-reduce:transform-none">
             <BrandMark />
           </span>
-          <span className="text-lg font-bold tracking-[-0.045em]">Client<span className="text-indigo-300">Pilot</span></span>
+          <span className="text-lg font-bold tracking-[-0.045em]">Client<span className="text-gray-300">Pilot</span></span>
         </Link>
 
         <motion.div
@@ -62,9 +62,9 @@ export function AuthShell({ children, mode }: AuthShellProps) {
 
       <section className="flex min-h-screen flex-col bg-white px-5 py-5 sm:px-9 sm:py-7 lg:px-10 xl:px-14 2xl:px-20">
         <div className="flex items-center justify-between lg:justify-end">
-          <Link href="/" className="group flex items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 lg:hidden">
+          <Link href="/" className="group flex items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25 lg:hidden">
             <span className="transition-transform duration-200 group-hover:-rotate-3 group-hover:scale-105 motion-reduce:transform-none"><BrandMark small /></span>
-            <span className="text-sm font-bold tracking-[-0.045em] text-slate-950">Client<span className="text-indigo-600">Pilot</span></span>
+            <span className="text-sm font-bold tracking-[-0.045em] text-slate-950">Client<span className="text-gray-600">Pilot</span></span>
           </Link>
           <p className="text-xs text-slate-500 sm:text-sm">
             {isLogin ? "New to ClientPilot?" : "Already have an account?"}{" "}

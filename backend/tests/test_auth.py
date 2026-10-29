@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.core.security import hash_session_token
+from app.main import app
 from app.models.auth_session import AuthSession
 from app.models.user import User
 from app.services.auth_service import AuthService, DuplicateOwnerError
@@ -24,8 +25,7 @@ def create_owner(db_session: Session, email: str = OWNER_EMAIL) -> User:
         email, OWNER_PASSWORD, OWNER_FULL_NAME, OWNER_PHONE_NUMBER
     )
     owner = db_session.scalar(select(User).where(User.email == email.lower()))
-    owner.email_verified_at = datetime.now(UTC)
-    db_session.commit()
+    assert owner is not None
     return owner
 
 
@@ -99,8 +99,8 @@ def test_registered_owner_can_log_in_and_access_only_their_clients(
     )
     assert registration.status_code == 201
     owner = db_session.scalar(select(User).where(User.email == OWNER_EMAIL))
-    owner.email_verified_at = datetime.now(UTC)
-    db_session.commit()
+    assert owner is not None
+    assert owner.email_verified is False
 
     login_response = api_client.post(
         "/api/auth/login",
@@ -118,57 +118,35 @@ def test_registered_owner_can_log_in_and_access_only_their_clients(
     ]
 
 
-def test_email_otp_verification_is_required_and_creates_session(
-    api_client: TestClient, monkeypatch: pytest.MonkeyPatch
+def test_email_verification_is_not_required_for_registration_or_private_access(
+    api_client: TestClient,
 ) -> None:
-    delivered: dict[str, str] = {}
-
-    def capture_code(_service: AuthService, email: str, code: str) -> None:
-        delivered[email] = code
-
-    monkeypatch.setattr("app.services.auth_service.AuthService._deliver_verification_code", capture_code)
     registration = api_client.post(
         "/api/auth/register",
         json={"email": "otp@example.com", "password": OWNER_PASSWORD, "full_name": OWNER_FULL_NAME, "phone_number": OWNER_PHONE_NUMBER},
     )
     assert registration.status_code == 201
-    assert api_client.post("/api/auth/login", json={"email": "otp@example.com", "password": OWNER_PASSWORD}).status_code == 403
-    verification = api_client.post("/api/auth/verify-email", json={"email": "otp@example.com", "code": delivered["otp@example.com"]})
-    assert verification.status_code == 200
-    assert verification.json()["email_verified"] is True
+    assert registration.json()["email_verified"] is False
+
     login = api_client.post("/api/auth/login", json={"email": "otp@example.com", "password": OWNER_PASSWORD})
     assert login.status_code == 200
     assert api_client.get("/api/clients").status_code == 200
 
 
-def test_email_otp_rejects_malformed_wrong_and_reused_codes(
-    api_client: TestClient, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    delivered: dict[str, str] = {}
+def test_only_supported_auth_endpoints_are_registered() -> None:
+    auth_routes = {
+        (path, method.upper())
+        for path, operations in app.openapi()["paths"].items()
+        if path.startswith("/api/auth/")
+        for method in operations
+    }
 
-    def capture_code(_service: AuthService, email: str, code: str) -> None:
-        delivered[email] = code
-
-    monkeypatch.setattr("app.services.auth_service.AuthService._deliver_verification_code", capture_code)
-    email = "otp-errors@example.com"
-    response = api_client.post(
-        "/api/auth/register",
-        json={"email": email, "password": OWNER_PASSWORD, "full_name": OWNER_FULL_NAME, "phone_number": OWNER_PHONE_NUMBER},
-    )
-    assert response.status_code == 201
-    assert api_client.post("/api/auth/verify-email", json={"email": email, "code": "123"}).status_code == 422
-    assert api_client.post("/api/auth/verify-email", json={"email": email, "code": "000000"}).json() == {"detail": "This verification code is invalid or expired."}
-    verified = api_client.post("/api/auth/verify-email", json={"email": email, "code": delivered[email]})
-    assert verified.status_code == 200
-    reused = api_client.post("/api/auth/verify-email", json={"email": email, "code": delivered[email]})
-    assert reused.status_code == 400
-    assert reused.json() == {"detail": "This verification code is invalid or expired."}
-
-
-def test_oauth_start_reports_missing_provider_configuration(api_client: TestClient) -> None:
-    response = api_client.get("/api/auth/oauth/google/start")
-    assert response.status_code == 503
-    assert response.json() == {"detail": "Google OAuth is not configured: client ID and client secret are required"}
+    assert auth_routes == {
+        ("/api/auth/register", "POST"),
+        ("/api/auth/login", "POST"),
+        ("/api/auth/logout", "POST"),
+        ("/api/auth/me", "GET"),
+    }
 
 
 def test_registered_owner_persists_across_database_sessions(
@@ -193,9 +171,7 @@ def test_registered_owner_persists_across_database_sessions(
     assert owner is not None
     assert owner.email == OWNER_EMAIL
     assert owner.password_hash.startswith("$argon2")
-    owner = db_session.scalar(select(User).where(User.id == registration.json()["id"]))
-    owner.email_verified_at = datetime.now(UTC)
-    db_session.commit()
+    assert owner.email_verified is False
 
     login_response = api_client.post(
         "/api/auth/login",
@@ -349,6 +325,25 @@ def test_logout_revokes_session_and_clears_cookie(
     assert "max-age=0" in response.headers["set-cookie"].lower()
     assert db_session.scalar(select(AuthSession)) is None
     assert api_client.get("/api/auth/me").status_code == 401
+
+
+def test_existing_unverified_session_can_access_private_clients(
+    api_client: TestClient, db_session: Session
+) -> None:
+    owner = create_owner(db_session)
+    token = "existing-unverified-session-token"
+    db_session.add(
+        AuthSession(
+            owner_id=owner.id,
+            token_hash=hash_session_token(token),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
+        )
+    )
+    db_session.commit()
+    api_client.cookies.set("clientpilot_session", token)
+
+    assert api_client.get("/api/auth/me").status_code == 200
+    assert api_client.get("/api/clients").status_code == 200
 
 
 def test_expired_session_is_rejected(

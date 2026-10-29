@@ -69,3 +69,8 @@ class ProjectService:
         self.db.commit()
         self.db.refresh(project)
         return project
+
+    def delete(self, project_id: UUID, owner_id: str) -> None:
+        project = self.get_for_owner(project_id, owner_id)
+        self.repository.delete(project)
+        self.db.commit()

@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.db.session import create_database_engine
 from app.models.client import Client
+from app.models.project import Project
+from app.models.task import Task
 from app.models.user import User
 from app.services.auth_service import AuthService
 
@@ -342,14 +344,38 @@ def test_client_records_persist_across_database_sessions(
         reopened_engine.dispose()
 
 
-def test_client_delete_is_not_exposed(
+def test_client_delete_is_owner_scoped_and_cascades_related_records(
     api_client: TestClient, db_session: Session
 ) -> None:
-    create_owner(db_session, "owner@example.com")
-    login(api_client, "owner@example.com")
-    created = api_client.post("/api/clients", json={"name": "Protected"}).json()
+    owner = create_owner(db_session, "owner@example.com")
+    other_owner = create_owner(db_session, "other@example.com")
+    login(api_client, owner.email)
+    created = api_client.post("/api/clients", json={"name": "Cascade"}).json()
+    project = api_client.post(
+        "/api/projects",
+        json={"client_id": created["id"], "name": "Cascade project"},
+    ).json()
+    task = api_client.post(
+        f"/api/projects/{project['id']}/tasks",
+        json={"title": "Cascade task"},
+    ).json()
 
-    response = api_client.delete(f"/api/clients/{created['id']}")
+    login(api_client, other_owner.email)
+    foreign_delete = api_client.delete(f"/api/clients/{created['id']}")
+    assert foreign_delete.status_code == 404
+    assert api_client.get("/api/clients").json() == []
 
-    assert response.status_code == 405
-    assert api_client.get(f"/api/clients/{created['id']}").status_code == 200
+    login(api_client, owner.email)
+    deleted = api_client.delete(f"/api/clients/{created['id']}")
+
+    assert deleted.status_code == 204
+    assert deleted.content == b""
+    assert api_client.get(f"/api/clients/{created['id']}").status_code == 404
+    assert api_client.get(f"/api/projects/{project['id']}").status_code == 404
+    assert (
+        api_client.get(f"/api/projects/{project['id']}/tasks/{task['id']}").status_code
+        == 404
+    )
+    assert db_session.get(Client, created["id"]) is None
+    assert db_session.get(Project, project["id"]) is None
+    assert db_session.get(Task, task["id"]) is None

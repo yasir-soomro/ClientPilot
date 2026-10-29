@@ -41,6 +41,9 @@ class ClientRepository:
             )
         )
 
+    def delete(self, client: Client) -> None:
+        self.db.delete(client)
+
     def has_duplicate(
         self,
         owner_id: str,

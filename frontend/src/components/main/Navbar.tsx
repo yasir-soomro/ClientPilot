@@ -104,7 +104,7 @@ export default function Navbar() {
         type="button"
         onClick={() => void handleLogout()}
         disabled={loggingOut}
-        className="inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 disabled:opacity-50"
+        className="inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-[#495057] transition-colors hover:bg-[#f1f3f5] hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25 disabled:opacity-50"
       >
         <LogOut size={16} aria-hidden="true" />
         {loggingOut ? "Signing out…" : "Log out"}
@@ -114,13 +114,13 @@ export default function Navbar() {
     <>
       <Link
         href="/login"
-        className="inline-flex min-h-10 items-center justify-center rounded-xl px-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20"
+        className="inline-flex min-h-10 items-center justify-center rounded-xl px-3 text-sm font-semibold text-[#495057] transition-colors hover:bg-[#f1f3f5] hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25"
       >
         Sign in
       </Link>
       <Link
         href="/register"
-        className="group inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition duration-200 hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/25 motion-reduce:transform-none"
+        className="group inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[#343a40] bg-[#343a40] px-4 text-sm font-semibold text-white shadow-sm shadow-[#343a40]/20 transition duration-200 hover:-translate-y-0.5 hover:border-[#212529] hover:bg-[#212529] hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/30 motion-reduce:transform-none"
       >
         Get started
         <ArrowUpRight
@@ -142,13 +142,13 @@ export default function Navbar() {
           <Link
             href="/"
             aria-label="ClientPilot home"
-            className="group flex shrink-0 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20"
+            className="group flex shrink-0 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25"
           >
             <span className="transition-transform duration-200 group-hover:-rotate-3 group-hover:scale-105 motion-reduce:transform-none">
               <BrandMark />
             </span>
             <span className="text-[17px] font-bold tracking-[-0.05em] text-slate-950">
-              Client<span className="text-indigo-600">Pilot</span>
+              Client<span className="text-gray-600">Pilot</span>
             </span>
           </Link>
 
@@ -190,7 +190,7 @@ export default function Navbar() {
               aria-controls="mobile-navigation"
               aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
               onClick={() => setMenuOpen((open) => !open)}
-              className="flex size-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20"
+              className="flex size-10 items-center justify-center rounded-xl border border-[#c6cbd1] bg-white text-[#495057] shadow-sm transition hover:border-[#6c757d] hover:bg-[#f1f3f5] hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25"
             >
               {menuOpen ? <X size={19} aria-hidden="true" /> : <Menu size={19} aria-hidden="true" />}
             </button>
@@ -239,7 +239,7 @@ export default function Navbar() {
                           type="button"
                           onClick={() => void handleLogout()}
                           disabled={loggingOut}
-                          className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-indigo-700 disabled:opacity-50"
+                          className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3.5 text-left text-sm font-semibold text-[#495057] transition hover:bg-[#f1f3f5] hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25 disabled:opacity-50"
                         >
                           <LogOut size={16} aria-hidden="true" />
                           {loggingOut ? "Signing out…" : "Log out"}
@@ -257,7 +257,7 @@ export default function Navbar() {
                         <Link
                           href="/register"
                           onClick={() => setMenuOpen(false)}
-                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/25"
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#343a40] bg-[#343a40] px-4 text-sm font-semibold text-white shadow-sm transition hover:border-[#212529] hover:bg-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/30"
                         >
                           Get started <ArrowUpRight size={16} aria-hidden="true" />
                         </Link>

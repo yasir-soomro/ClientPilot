@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 import {
   createProject,
+  deleteProject,
   getProject,
   listProjects,
   updateProject,
@@ -137,6 +138,20 @@ test("project service rejects malformed server response shapes", async () => {
     name: "Error",
     message: "The server returned an invalid project response.",
   });
+});
+
+test("project deletion uses the owner-scoped delete route", async () => {
+  let call;
+  globalThis.fetch = async (url, options) => {
+    call = { url, options };
+    return new Response(null, { status: 204 });
+  };
+
+  await deleteProject(project.id);
+
+  assert.equal(call.url, `/api/projects/${project.id}`);
+  assert.equal(call.options.method, "DELETE");
+  assert.equal(call.options.credentials, "include");
 });
 
 test("project create and update results are visible through refreshed list reads", async () => {

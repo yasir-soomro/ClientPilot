@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -90,3 +90,21 @@ def update_task_status(
     except TaskNotFoundError:
         raise _task_not_found() from None
     return TaskRead.model_validate(task)
+
+
+@router.delete(
+    "/{project_id}/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+def delete_task(
+    project_id: UUID,
+    task_id: UUID,
+    owner: CurrentUser,
+    db: Annotated[Session, Depends(get_db)],
+) -> Response:
+    try:
+        TaskService(db).delete(project_id, task_id, owner.id)
+    except ProjectNotFoundError:
+        raise _project_not_found() from None
+    except TaskNotFoundError:
+        raise _task_not_found() from None
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

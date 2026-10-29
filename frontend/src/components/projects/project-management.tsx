@@ -23,6 +23,7 @@ import {
 } from "@/features/projects/schema";
 import {
   createProject,
+  deleteProject,
   getProject,
   listProjects,
   updateProject,
@@ -84,8 +85,10 @@ export function ProjectManagement({
   const [createSuccess, setCreateSuccess] = useState("");
   const [updateError, setUpdateError] = useState("");
   const [updateSuccess, setUpdateSuccess] = useState("");
+  const [deleteError, setDeleteError] = useState("");
   const [creating, setCreating] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const detailRequest = useRef(0);
@@ -269,6 +272,33 @@ export function ProjectManagement({
     }
   }
 
+  async function handleDelete() {
+    if (
+      !selectedProject ||
+      !window.confirm(
+        `Delete "${selectedProject.name}" and all associated tasks? This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await deleteProject(selectedProject.id);
+      setSelectedProject(null);
+      setSelectedId(null);
+      setDetailsError("");
+      setEditOpen(false);
+      await refreshProjects();
+      router.replace("/projects");
+    } catch (error) {
+      setDeleteError(handleApiError(error));
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   function clientName(clientId: string): string {
     return clients.find((client) => client.id === clientId)?.name ??
       "Client unavailable";
@@ -278,12 +308,12 @@ export function ProjectManagement({
     <section aria-labelledby="projects-heading" className="mt-0">
       <div className="mb-6">
         <p className="cp-eyebrow">Workspace</p>
-        <h2
+        <h1
           id="projects-heading"
-          className="mt-2 text-3xl font-bold tracking-[-0.045em] text-[#182230]"
+          className="mt-2 text-3xl font-bold tracking-[-0.045em] text-[#182230] sm:text-4xl"
         >
           Projects
-        </h2>
+        </h1>
         <p className="mt-1 text-sm leading-6 text-[#667085]">
           Organize projects around your clients and track their status.
         </p>
@@ -295,12 +325,12 @@ export function ProjectManagement({
             Create a project
           </h3>
           {clientsError ? (
-            <div className="mt-4" role="alert">
-              <p className="text-sm leading-5 text-[#b42318]">{clientsError}</p>
+            <div className="cp-alert-error mt-4 p-4" role="alert">
+              <p className="text-sm leading-5">{clientsError}</p>
               <button
                 type="button"
                 onClick={() => void loadClients()}
-                className="mt-3 text-sm font-semibold text-[#4355d9] hover:underline"
+                className="mt-3 text-sm font-semibold text-[#343a40] transition-colors hover:text-[#212529] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c757d]/40"
               >
                 Reload clients
               </button>
@@ -310,7 +340,7 @@ export function ProjectManagement({
               Loading clients…
             </p>
           ) : clients.length === 0 ? (
-            <p className="mt-4 rounded-xl bg-[#f7f8fc] p-4 text-sm leading-6 text-[#667085]">
+            <p className="cp-empty mt-4 p-4 text-sm leading-6">
               Add a client before creating a project.{" "}
               <Link
                 href="/clients"
@@ -321,16 +351,18 @@ export function ProjectManagement({
             </p>
           ) : (
             <>
-            <button type="button" onClick={() => setCreateOpen(true)} className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">+ New project</button>
+            <Button type="button" onClick={() => setCreateOpen(true)} className="mt-6">
+              + New project
+            </Button>
             <Dialog open={createOpen} title="Create a project" description="Link the project to one of your owner-scoped clients." onClose={() => setCreateOpen(false)}>
             <form className="mt-5 space-y-4" onSubmit={handleCreate} noValidate>
               {createError ? (
-                <p role="alert" className="text-sm leading-5 text-[#b42318]">
+                <p role="alert" className="cp-alert-error px-4 py-3 text-sm leading-5">
                   {createError}
                 </p>
               ) : null}
               {createSuccess ? (
-                <p role="status" className="text-sm leading-5 text-[#067647]">
+                <p role="status" className="cp-alert-success px-4 py-3 text-sm leading-5">
                   {createSuccess}
                 </p>
               ) : null}
@@ -349,7 +381,7 @@ export function ProjectManagement({
                       ? "new-project-client-error"
                       : undefined
                   }
-                  className="h-11 w-full rounded-xl border border-[#dfe2ea] bg-white px-4 text-sm text-[#182230] shadow-[0_1px_2px_rgba(16,24,40,0.03)] outline-none transition hover:border-[#c7cad5] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                  className="cp-control h-11 w-full px-4 text-sm"
                 >
                   <option value="" disabled>
                     Select a client
@@ -396,7 +428,7 @@ export function ProjectManagement({
                       ? "new-project-status-error"
                       : undefined
                   }
-                  className="h-11 w-full rounded-xl border border-[#dfe2ea] bg-white px-4 text-sm text-[#182230] shadow-[0_1px_2px_rgba(16,24,40,0.03)] outline-none transition hover:border-[#c7cad5] focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                  className="cp-control h-11 w-full px-4 text-sm capitalize"
                 >
                   {PROJECT_STATUSES.map((status) => (
                     <option key={status} value={status}>
@@ -439,31 +471,30 @@ export function ProjectManagement({
               Loading projects…
             </p>
           ) : listError ? (
-            <div className="mt-5" role="alert">
+            <div className="cp-alert-error mt-5 p-4" role="alert">
               <p className="text-sm leading-5 text-[#b42318]">{listError}</p>
               <button
                 type="button"
                 onClick={() => void refreshProjects()}
-                className="mt-3 text-sm font-semibold text-[#4355d9] hover:underline"
+                className="mt-3 text-sm font-semibold text-[#343a40] transition-colors hover:text-[#212529] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c757d]/40"
               >
                 Try again
               </button>
             </div>
           ) : projects.length === 0 ? (
-            <p className="mt-5 rounded-xl bg-[#f7f8fc] p-4 text-sm leading-6 text-[#667085]">
+            <p className="cp-empty mt-5 p-4 text-sm leading-6">
               No projects yet. Create a project for one of your clients.
             </p>
           ) : (
             <ul className="mt-4 divide-y divide-[#eaecf0]">
               {projects.map((project) => (
                 <li key={project.id}>
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/projects/${project.id}`)}
+                  <Link
+                    href={`/projects/${project.id}`}
                     aria-current={
                       selectedId === project.id ? "true" : undefined
                     }
-                    className={`w-full rounded-lg px-3 py-3 text-left transition hover:bg-[#f7f8fc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5969e8] ${
+                    className={`block w-full rounded-lg px-3 py-3 text-left transition hover:bg-[#f7f8fc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5969e8] ${
                       selectedId === project.id ? "bg-[#f2f4ff]" : ""
                     }`}
                   >
@@ -475,7 +506,7 @@ export function ProjectManagement({
                       {statusLabel(project.status)}
                       {project.due_date ? ` · Due ${project.due_date}` : ""}
                     </span>
-                  </button>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -499,11 +530,16 @@ export function ProjectManagement({
               Loading project details…
             </p>
           ) : detailsError ? (
-            <p role="alert" className="mt-4 text-sm text-[#b42318]">
+            <p role="alert" className="cp-alert-error mt-4 px-4 py-3 text-sm">
               {detailsError}
             </p>
           ) : selectedProject ? (
             <div className="mt-5 grid gap-8 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)]">
+              {deleteError ? (
+                <p role="alert" className="cp-alert-error px-4 py-3 text-sm lg:col-span-2">
+                  {deleteError}
+                </p>
+              ) : null}
               <dl className="space-y-4 text-sm">
                 <div>
                   <dt className="font-medium text-[#667085]">Client</dt>
@@ -531,7 +567,7 @@ export function ProjectManagement({
               </dl>
 
               <div className="lg:col-span-1">
-                <div className="flex items-center justify-between gap-3"><div><h4 className="font-semibold text-[#182230]">{selectedProject.name}</h4><p className="mt-1 text-sm capitalize text-[#667085]">{statusLabel(selectedProject.status)} · {selectedProject.due_date ? `Due ${selectedProject.due_date}` : "No due date"}</p></div><button type="button" onClick={() => setEditOpen(true)} className="min-h-10 rounded-xl border border-[#dfe2ea] bg-white px-4 text-sm font-semibold text-[#344054] transition hover:border-indigo-200 hover:bg-indigo-50/40">Edit</button></div>
+                <div className="flex items-center justify-between gap-3"><div><h4 className="font-semibold text-[#182230]">{selectedProject.name}</h4><p className="mt-1 text-sm capitalize text-[#667085]">{statusLabel(selectedProject.status)} · {selectedProject.due_date ? `Due ${selectedProject.due_date}` : "No due date"}</p></div><div className="flex gap-2"><button type="button" onClick={handleDelete} disabled={deleting} className="min-h-10 rounded-xl border border-[#c6cbd1] bg-white px-4 text-sm font-semibold text-[#343a40] transition hover:border-[#6c757d] hover:bg-[#f3f4f5] hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25 disabled:opacity-60">{deleting ? "Deleting…" : "Delete"}</button><button type="button" onClick={() => setEditOpen(true)} className="min-h-10 rounded-xl border border-[#c6cbd1] bg-white px-4 text-sm font-semibold text-[#343a40] transition hover:border-[#6c757d] hover:bg-[#f3f4f5] hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25">Edit</button></div></div>
                 <Dialog open={editOpen} title="Edit project" description="Update the project details and delivery status." onClose={() => setEditOpen(false)}>
                 <form
                   key={`${selectedProject.id}-${selectedProject.updated_at}`}
@@ -540,12 +576,12 @@ export function ProjectManagement({
                   noValidate
                 >
                 {updateError ? (
-                  <p role="alert" className="text-sm leading-5 text-[#b42318]">
+                  <p role="alert" className="cp-alert-error px-4 py-3 text-sm leading-5">
                     {updateError}
                   </p>
                 ) : null}
                 {updateSuccess ? (
-                  <p role="status" className="text-sm leading-5 text-[#067647]">
+                  <p role="status" className="cp-alert-success px-4 py-3 text-sm leading-5">
                     {updateSuccess}
                   </p>
                 ) : null}
@@ -564,7 +600,7 @@ export function ProjectManagement({
                         ? "edit-project-client-error"
                         : undefined
                     }
-                    className="h-12 w-full rounded-xl border border-[#d0d5dd] bg-white px-4 text-[15px] text-[#182230] outline-none transition focus:border-[#5969e8] focus:ring-4 focus:ring-[#5969e8]/10"
+                    className="cp-control h-12 w-full px-4 text-sm"
                   >
                     {clients.map((client) => (
                       <option key={client.id} value={client.id}>
@@ -605,7 +641,7 @@ export function ProjectManagement({
                         ? "edit-project-status-error"
                         : undefined
                     }
-                    className="h-12 w-full rounded-xl border border-[#d0d5dd] bg-white px-4 text-[15px] text-[#182230] outline-none transition focus:border-[#5969e8] focus:ring-4 focus:ring-[#5969e8]/10"
+                    className="cp-control h-12 w-full px-4 text-sm capitalize"
                   >
                     {PROJECT_STATUSES.map((status) => (
                       <option key={status} value={status}>

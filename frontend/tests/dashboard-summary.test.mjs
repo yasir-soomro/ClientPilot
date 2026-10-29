@@ -53,3 +53,11 @@ test("task summary counts pending and overdue work and calculates project progre
   assert.equal(summary.projectProgress[0].progress, 33);
   assert.equal(summary.upcomingTasks[0].id, "task-2");
 });
+
+test("project progress is zero for projects without tasks", () => {
+  const summary = summarizeTasks([], [project("empty", "planned")]);
+
+  assert.deepEqual(summary.projectProgress, [
+    { project: project("empty", "planned"), total: 0, completed: 0, progress: 0 },
+  ]);
+});

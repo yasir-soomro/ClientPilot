@@ -45,3 +45,6 @@ class ProjectRepository:
             .join(Client, Project.client_id == Client.id)
             .where(Project.id == str(project_id), Client.owner_id == owner_id)
         )
+
+    def delete(self, project: Project) -> None:
+        self.db.delete(project)

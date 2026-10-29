@@ -9,8 +9,6 @@ from sqlalchemy.orm import Session
 
 os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["AUTH_COOKIE_SECURE"] = "false"
-os.environ["APP_ENVIRONMENT"] = "test"
-os.environ["DEVELOPMENT_OTP_ENABLED"] = "true"
 
 from app.db.base import Base
 from app.db.session import create_database_engine, get_db

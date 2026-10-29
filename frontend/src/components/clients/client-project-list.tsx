@@ -52,7 +52,7 @@ export function ClientProjectList({ clientId }: { clientId: string }) {
   return (
     <section
       aria-labelledby="client-projects-heading"
-      className="mt-6 rounded-2xl border border-[#eaecf0] bg-white p-6 shadow-[0_8px_28px_rgba(16,24,40,0.04)]"
+      className="cp-card mt-6 p-5 sm:p-6"
     >
       <div className="flex items-center justify-between gap-3">
         <h3
@@ -73,7 +73,7 @@ export function ClientProjectList({ clientId }: { clientId: string }) {
           Loading projects…
         </p>
       ) : error ? (
-        <div className="mt-4" role="alert">
+        <div className="cp-alert-error mt-4 p-4" role="alert">
           <p className="text-sm leading-5 text-[#b42318]">{error}</p>
           <button
             type="button"
@@ -82,13 +82,13 @@ export function ClientProjectList({ clientId }: { clientId: string }) {
               setError("");
               setRetry((attempt) => attempt + 1);
             }}
-            className="mt-3 text-sm font-semibold text-[#4355d9] hover:underline"
+            className="mt-3 text-sm font-semibold text-[#343a40] transition-colors hover:text-[#212529] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6c757d]/40"
           >
             Try again
           </button>
         </div>
       ) : projects.length === 0 ? (
-        <p className="mt-4 rounded-xl bg-[#f7f8fc] p-4 text-sm leading-6 text-[#667085]">
+        <p className="cp-empty mt-4 p-4 text-sm leading-6">
           No projects are linked to this client yet.
         </p>
       ) : (

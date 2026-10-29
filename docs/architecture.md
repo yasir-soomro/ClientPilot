@@ -102,11 +102,11 @@ Use persistent database records. Ownership must be enforced on every private API
 
 ### 2.4 Frontend boundaries
 
-The frontend provides the public single-page landing page at `/` with Home, Features, and About in-page sections, plus login/register and authenticated workspace routes. The public navigation adapts to signed-in state, as specified in section 16.2 of the specification. Workspace routes check the current Owner and required verification state before rendering private content; direct navigation must not expose workspace data. This is a user-experience guard only: every private backend API independently checks session, email verification, and ownership. Project detail includes task creation, listing, and status updates.
+The frontend provides the public single-page landing page at `/` with Home, Features, and About in-page sections, plus login/register and authenticated workspace routes. The public navigation adapts to signed-in state, as specified in section 16.2 of the specification. During the temporary email-verification deferral recorded in the specification, workspace routes require an authenticated Owner but do not require a verified email. This is a user-experience guard only: every private backend API independently checks session validity and ownership. Project detail includes task creation, listing, and status updates.
 
 ### 2.5 V1 boundaries
 
-Email/password registration, Google/GitHub sign-in, the required email-verification gate, and the public landing experience in specification section 16.2 are approved V1 scope. Email/password registration collects an E.164 phone number; phone verification/SMS OTP is not part of V1. Do not add a business-client portal, marketplace, in-app notifications, file uploads, approval workflows, invoices, payments, AI features, teams, permanent deletion, or infrastructure excluded by the V1 specification.
+Email/password registration, Google/GitHub sign-in, email verification, and the public landing experience in specification section 16.2 are approved V1 scope. Mandatory email verification is temporarily deferred as recorded in the specification; preserve its future design while allowing authenticated, owner-scoped private access. Email/password registration collects an E.164 phone number; phone verification/SMS OTP is not part of V1. Do not add a business-client portal, marketplace, in-app notifications, file uploads, approval workflows, invoices, payments, AI features, teams, or infrastructure excluded by the V1 specification. Client, project, and task deletion is owner-scoped; parent deletion cascades to its child records.
 
 ## 3. First Implementation Milestone
 
@@ -125,7 +125,7 @@ This describes the implemented email/password baseline only. CD-001's authentica
 - Another Owner's client cannot be viewed or changed by guessing its identifier.
 - Successful changes persist across application restarts.
 - Automated tests cover successful operations, invalid input, missing records, authentication failures, and cross-owner access.
-- No permanent client-delete operation is exposed.
+- Client, project, and task deletion is available only through authenticated, owner-scoped operations; parent deletes cascade to child records.
 - API error responses and status codes are predictable and documented.
 
 ## 4. Decisions Required Before Implementation
@@ -139,4 +139,4 @@ Resolve and document these remaining decisions before the related implementation
 3. Dashboard deadline window, time-zone handling, overdue presentation, and dashboard API details in specification section 17.2.
 4. Backups and deployment-specific database requirements.
 
-Project status, update, validation, due-date, list, and API decisions are recorded in specification section 8.3. Task fields, due-date, transition, list, and API decisions are recorded in section 9. The approved session-cookie contract and CD-001/CD-002 requirements are recorded in section 16. Only the operational/authentication design details listed in section 17.1 and the dashboard/deployment details listed in section 17.2 remain open. Permanent deletion remains outside V1 unless the scope is explicitly changed.
+Project status, update, validation, due-date, list, and API decisions are recorded in specification section 8.3. Task fields, due-date, transition, list, and API decisions are recorded in section 9. The approved session-cookie contract and CD-001/CD-002 requirements are recorded in section 16. Only the operational/authentication design details listed in section 17.1 and the dashboard/deployment details listed in section 17.2 remain open.

@@ -31,7 +31,7 @@ export default function WhyClientPilotPage() {
           <span className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3.5 py-2 text-xs font-semibold text-indigo-700"><Sparkles size={14} aria-hidden="true" /> Built around your workflow</span>
           <h1 id="why-clientpilot-heading" className="mt-6 text-4xl font-semibold tracking-[-0.06em] text-slate-950 sm:text-6xl">More clarity for the work behind every client relationship.</h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">ClientPilot gives freelancers and small agencies a focused place to connect client context, project delivery, and the tasks that move work forward.</p>
-          <Link href="/register" className="mt-8 inline-flex min-h-[50px] items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:-translate-y-0.5 hover:bg-indigo-700">Create your workspace <ArrowRight size={17} aria-hidden="true" /></Link>
+          <Link href="/register" className="mt-8 inline-flex min-h-[50px] items-center gap-2 rounded-xl border border-[#343a40] bg-[#343a40] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#343a40]/20 transition hover:-translate-y-0.5 hover:border-[#212529] hover:bg-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/30">Create your workspace <ArrowRight size={17} aria-hidden="true" /></Link>
         </div>
       </section>
 

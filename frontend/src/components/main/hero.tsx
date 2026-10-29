@@ -50,7 +50,7 @@ export default function Hero() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link
               href="/register"
-              className="group inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(79,70,229,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/25"
+              className="group inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-[#343a40] bg-[#343a40] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(52,58,64,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#212529] hover:bg-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/30"
             >
               Create your workspace
               <ArrowRight

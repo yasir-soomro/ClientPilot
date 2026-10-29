@@ -46,31 +46,6 @@ class RegisterRequest(LoginRequest):
         return value
 
 
-class VerifyEmailRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    email: EmailStr
-    code: str
-
-    @field_validator("code")
-    @classmethod
-    def validate_code(cls, value: str) -> str:
-        if not re.fullmatch(r"[0-9]{6}", value):
-            raise ValueError("Verification code must be six digits.")
-        return value
-
-
-class ResendVerificationRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    email: EmailStr
-
-
-class OAuthProviderRead(BaseModel):
-    provider: str
-    email: EmailStr
-
-
 class OwnerRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

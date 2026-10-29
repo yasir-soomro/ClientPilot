@@ -45,3 +45,6 @@ class TaskRepository:
                 Task.id == str(task_id), Task.project_id == project_id
             )
         )
+
+    def delete(self, task: Task) -> None:
+        self.db.delete(task)

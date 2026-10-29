@@ -122,7 +122,7 @@ export function Dialog({
                   type="button"
                   onClick={onClose}
                   aria-label="Close dialog"
-                  className="flex size-9 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-xl text-[#495057] transition hover:bg-[#f1f3f5] hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25"
                 >
                   <X size={18} aria-hidden="true" />
                 </button>

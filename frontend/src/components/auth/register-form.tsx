@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState, type FormEvent } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
@@ -11,10 +10,8 @@ import { Input } from "@/components/ui/input";
 import { registerOwner } from "@/features/auth/service";
 import { validateRegisterInput } from "@/features/auth/schema";
 import type { FieldErrors, RegisterInput } from "@/features/auth/types";
-import { OAuthButtons } from "@/components/auth/oauth-buttons";
 
 export function RegisterForm() {
-  const router = useRouter();
   const [errors, setErrors] = useState<FieldErrors<keyof RegisterInput>>({});
   const [apiError, setApiError] = useState("");
   const [success, setSuccess] = useState("");
@@ -40,9 +37,8 @@ export function RegisterForm() {
 
     setLoading(true);
     try {
-      const owner = await registerOwner(input);
-      const query = new URLSearchParams({ email: owner.email });
-      router.push(`/verify-email?${query.toString()}`);
+      await registerOwner(input);
+      setSuccess("Your account is ready. Sign in to open your private workspace.");
       setErrors({});
     } catch (error) {
       setApiError(
@@ -78,7 +74,7 @@ export function RegisterForm() {
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -5 }}
-              className="rounded-xl border border-[#fecdca] bg-[#fff4f2] px-4 py-3 text-sm leading-5 text-[#b42318]"
+              className="cp-alert-error px-4 py-3 text-sm leading-5"
             >
               {apiError}
             </motion.div>
@@ -90,7 +86,7 @@ export function RegisterForm() {
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -5 }}
-              className="rounded-xl border border-[#abefc6] bg-[#ecfdf3] px-4 py-3 text-sm leading-5 text-[#067647]"
+              className="cp-alert-success px-4 py-3 text-sm leading-5"
             >
               {success}{" "}
               <Link
@@ -179,8 +175,6 @@ export function RegisterForm() {
           Your account starts with a private workspace only you can access.
         </p>
       </form>
-      <div className="my-6 flex items-center gap-3 text-xs font-medium text-[#98a2b3]"><span className="h-px flex-1 bg-[#eaecf0]" />OR<span className="h-px flex-1 bg-[#eaecf0]" /></div>
-      <OAuthButtons />
     </AuthShell>
   );
 }

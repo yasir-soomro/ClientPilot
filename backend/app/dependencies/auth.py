@@ -28,13 +28,7 @@ def get_authenticated_user(
 def get_current_user(
     request: Request, db: Annotated[Session, Depends(get_db)]
 ) -> User:
-    owner = get_authenticated_user(request, db)
-    if owner.email_verified_at is None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Email verification required",
-        )
-    return owner
+    return get_authenticated_user(request, db)
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]

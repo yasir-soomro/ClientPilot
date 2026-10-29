@@ -28,13 +28,13 @@ export default function Footer() {
             <Link
               href="/"
               aria-label="ClientPilot home"
-              className="group inline-flex items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20"
+              className="group inline-flex items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25"
             >
               <span className="transition-transform duration-200 group-hover:-rotate-3 group-hover:scale-105 motion-reduce:transform-none">
                 <BrandMark small />
               </span>
               <span className="text-[15px] font-bold tracking-[-0.05em] text-slate-950">
-                Client<span className="text-indigo-600">Pilot</span>
+                Client<span className="text-gray-600">Pilot</span>
               </span>
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-6 text-slate-500">

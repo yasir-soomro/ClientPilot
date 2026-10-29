@@ -275,6 +275,8 @@ def test_project_access_is_owner_scoped_and_missing_matches_foreign(
     missing_read = api_client.get(missing_url)
     foreign_update = api_client.patch(foreign_url, json={"name": "Changed"})
     missing_update = api_client.patch(missing_url, json={"name": "Changed"})
+    foreign_delete = api_client.delete(foreign_url)
+    missing_delete = api_client.delete(missing_url)
 
     assert api_client.get("/api/projects").json() == []
     assert foreign_read.status_code == missing_read.status_code == 404
@@ -283,6 +285,7 @@ def test_project_access_is_owner_scoped_and_missing_matches_foreign(
     }
     assert foreign_update.status_code == missing_update.status_code == 404
     assert foreign_update.json() == missing_update.json()
+    assert foreign_delete.status_code == missing_delete.status_code == 404
 
     login(api_client, first_owner.email)
     assert api_client.get(foreign_url).json() == project
@@ -342,7 +345,7 @@ def test_project_list_is_newest_first_and_owner_scoped(
     ]
 
 
-def test_project_requires_authentication_and_delete_is_not_exposed(
+def test_project_delete_requires_authentication_and_cascades_tasks(
     api_client: TestClient, db_session: Session
 ) -> None:
     owner = create_owner(db_session, "owner@example.com")
@@ -351,6 +354,10 @@ def test_project_requires_authentication_and_delete_is_not_exposed(
     project = api_client.post(
         "/api/projects",
         json={"client_id": client["id"], "name": "Protected"},
+    ).json()
+    task = api_client.post(
+        f"/api/projects/{project['id']}/tasks",
+        json={"title": "Project task"},
     ).json()
 
     api_client.post("/api/auth/logout")
@@ -362,13 +369,18 @@ def test_project_requires_authentication_and_delete_is_not_exposed(
         api_client.get("/api/projects"),
         api_client.get(f"/api/projects/{project['id']}"),
         api_client.patch(f"/api/projects/{project['id']}", json={"name": "No auth"}),
+        api_client.delete(f"/api/projects/{project['id']}"),
     ]
 
     assert [response.status_code for response in responses] == [401] * len(responses)
     login(api_client, owner.email)
     deleted = api_client.delete(f"/api/projects/{project['id']}")
-    assert deleted.status_code == 405
-    assert api_client.get(f"/api/projects/{project['id']}").status_code == 200
+    assert deleted.status_code == 204
+    assert api_client.get(f"/api/projects/{project['id']}").status_code == 404
+    assert (
+        api_client.get(f"/api/projects/{project['id']}/tasks/{task['id']}").status_code
+        == 404
+    )
 
 
 def test_project_records_persist_across_database_sessions(

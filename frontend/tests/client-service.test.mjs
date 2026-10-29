@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 import {
   createClient,
+  deleteClient,
   getClient,
   listClients,
   updateClient,
@@ -164,4 +165,18 @@ test("client service rejects malformed backend response shapes", async () => {
     name: "Error",
     message: "The server returned an invalid client list.",
   });
+});
+
+test("client deletion uses the owner-scoped delete route", async () => {
+  let call;
+  globalThis.fetch = async (url, options) => {
+    call = { url, options };
+    return new Response(null, { status: 204 });
+  };
+
+  await deleteClient(client.id);
+
+  assert.equal(call.url, `/api/clients/${client.id}`);
+  assert.equal(call.options.method, "DELETE");
+  assert.equal(call.options.credentials, "include");
 });

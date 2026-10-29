@@ -15,10 +15,10 @@ type ButtonProps = {
 };
 
 const variants = {
-  primary: "bg-indigo-600 text-white shadow-[0_6px_16px_rgba(79,70,229,0.2)] hover:bg-indigo-700 hover:shadow-[0_9px_22px_rgba(79,70,229,0.24)] focus-visible:ring-indigo-500/25",
-  secondary: "border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-indigo-200 hover:bg-indigo-50/50 hover:text-indigo-800 focus-visible:ring-indigo-500/20",
-  ghost: "bg-transparent text-slate-600 shadow-none hover:bg-slate-100 hover:text-slate-950 focus-visible:ring-indigo-500/20",
-  danger: "bg-rose-600 text-white shadow-sm shadow-rose-600/15 hover:bg-rose-700 focus-visible:ring-rose-500/25",
+  primary: "border border-[#343a40] bg-[#343a40] text-white shadow-[0_6px_16px_rgba(52,58,64,0.2)] hover:border-[#212529] hover:bg-[#212529] hover:shadow-[0_9px_22px_rgba(33,37,41,0.24)] focus-visible:ring-[#6c757d]/30",
+  secondary: "border border-[#c6cbd1] bg-white text-[#343a40] shadow-sm hover:border-[#6c757d] hover:bg-[#f3f4f5] hover:text-[#212529] focus-visible:ring-[#6c757d]/25",
+  ghost: "bg-transparent text-[#495057] shadow-none hover:bg-[#f1f3f5] hover:text-[#212529] focus-visible:ring-[#6c757d]/25",
+  danger: "border border-[#343a40] bg-[#343a40] text-white shadow-sm shadow-[#343a40]/15 hover:border-[#212529] hover:bg-[#212529] focus-visible:ring-[#6c757d]/30",
 } as const;
 
 const sizes = {

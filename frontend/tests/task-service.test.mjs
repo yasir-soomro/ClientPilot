@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
-import { createTask, getTask, listTasks, updateTaskStatus } from "../src/features/tasks/service.ts";
+import { createTask, deleteTask, getTask, listTasks, updateTaskStatus } from "../src/features/tasks/service.ts";
 
 const originalFetch = globalThis.fetch;
 const task = {
@@ -38,4 +38,21 @@ test("task service surfaces API failures and rejects malformed responses", async
   await assert.rejects(listTasks(task.project_id), { name: "ApiError", status: 404, message: "Task not found" });
   globalThis.fetch = async () => new Response(JSON.stringify({ ...task, status: "archived" }), { status: 200 });
   await assert.rejects(getTask(task.project_id, task.id), { message: "The server returned an invalid task response." });
+});
+
+test("task deletion uses the project-scoped task route", async () => {
+  let call;
+  globalThis.fetch = async (url, options) => {
+    call = { url, options };
+    return new Response(null, { status: 204 });
+  };
+
+  await deleteTask(task.project_id, task.id);
+
+  assert.equal(
+    call.url,
+    `/api/projects/${task.project_id}/tasks/${task.id}`,
+  );
+  assert.equal(call.options.method, "DELETE");
+  assert.equal(call.options.credentials, "include");
 });

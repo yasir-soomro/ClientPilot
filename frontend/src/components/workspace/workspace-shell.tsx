@@ -82,15 +82,18 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 
   return (
     <main className="min-h-screen bg-[var(--cp-background)] lg:grid lg:grid-cols-[264px_minmax(0,1fr)]">
+      <Link href="#workspace-content" className="cp-skip-link">
+        Skip to workspace
+      </Link>
       <aside className="border-b border-slate-200/80 bg-white lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
         <div className="flex h-full flex-col px-4 py-4 sm:px-6 lg:px-5 lg:py-6">
-          <Link href="/dashboard" className="group flex items-center gap-3 px-2 focus-visible:rounded-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20">
+          <Link href="/dashboard" className="group flex items-center gap-3 px-2 focus-visible:rounded-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25">
             <span className="transition-transform duration-200 group-hover:-rotate-3 group-hover:scale-105 motion-reduce:transform-none">
             <BrandMark />
             </span>
-            <span className="text-[15px] font-bold tracking-[-0.045em] text-slate-950">Client<span className="text-indigo-600">Pilot</span></span>
+            <span className="text-[15px] font-bold tracking-[-0.045em] text-slate-950">Client<span className="text-gray-600">Pilot</span></span>
           </Link>
-          <Link href="/projects" className="mt-6 flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(79,70,229,0.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/25 lg:mt-9 motion-reduce:transform-none">
+          <Link href="/projects" className="mt-6 flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#343a40] bg-[#343a40] px-3 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(52,58,64,0.2)] transition duration-200 hover:-translate-y-0.5 hover:border-[#212529] hover:bg-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/30 lg:mt-9 motion-reduce:transform-none">
             <Plus size={16} aria-hidden="true" /> New project
           </Link>
           <p className="mb-2 mt-6 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 lg:mb-3 lg:mt-9">Workspace</p>
@@ -128,7 +131,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
               type="button"
               onClick={handleLogout}
               disabled={signingOut || !owner}
-              className="flex min-h-10 w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 disabled:opacity-60"
+              className="flex min-h-10 w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-[#495057] transition hover:bg-[#f1f3f5] hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25 disabled:opacity-60"
             >
               <LogOut aria-hidden="true" size={17} />{signingOut ? "Signing out…" : "Sign out"}
             </button>
@@ -141,10 +144,10 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
         <div><p className="text-[11px] font-medium text-slate-400">Private workspace</p><p className="mt-0.5 text-sm font-semibold text-slate-700">{navigation.find((item) => item.href === (pathname.startsWith("/clients") ? "/clients" : pathname.startsWith("/projects") ? "/projects" : "/dashboard"))?.label}</p></div>
         <div className="flex items-center gap-3 lg:hidden">
           {owner ? <span className="flex size-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-100 to-sky-100 text-xs font-bold text-indigo-700 ring-1 ring-indigo-200/70">{(owner.full_name ?? owner.email).slice(0, 1).toUpperCase()}</span> : null}
-          <button type="button" onClick={handleLogout} disabled={signingOut || !owner} aria-label="Sign out" className="rounded-xl p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 disabled:opacity-60"><LogOut size={17} aria-hidden="true" /></button>
+          <button type="button" onClick={handleLogout} disabled={signingOut || !owner} aria-label="Sign out" className="rounded-xl p-2 text-[#495057] transition hover:bg-[#f1f3f5] hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25 disabled:opacity-60"><LogOut size={17} aria-hidden="true" /></button>
         </div>
       </header>
-      <section className="mx-auto w-full max-w-[1440px] px-5 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-11">
+      <section id="workspace-content" tabIndex={-1} className="mx-auto w-full max-w-[1440px] px-5 py-7 outline-none sm:px-8 sm:py-9 lg:px-10 lg:py-11">
         {loading ? (
           <div
             className="cp-panel p-6 text-sm text-slate-600 sm:p-8"
@@ -172,12 +175,6 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
             >
               Try again
             </Button>
-          </div>
-        ) : owner && !owner.email_verified ? (
-          <div className="cp-panel max-w-xl border-amber-200 p-6 sm:p-8" role="alert">
-            <h1 className="text-xl font-semibold tracking-tight text-slate-950">Verify your email to continue</h1>
-            <p className="mt-2 text-sm leading-6 text-slate-600">Your private workspace is available after email verification.</p>
-            <Link href={`/verify-email?${new URLSearchParams({ email: owner.email }).toString()}`} className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/25">Verify email</Link>
           </div>
         ) : owner ? (
           <>

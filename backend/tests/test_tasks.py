@@ -154,7 +154,9 @@ def test_task_routes_require_auth_and_missing_records_return_404(
     missing_detail = api_client.get(f"/api/projects/{project['id']}/tasks/{missing_task}")
     assert missing_detail.status_code == 404
     assert missing_detail.json() == {"detail": "Task not found"}
-    assert api_client.delete(f"/api/projects/{project['id']}/tasks/{task['id']}").status_code == 405
+    deleted = api_client.delete(f"/api/projects/{project['id']}/tasks/{task['id']}")
+    assert deleted.status_code == 204
+    assert api_client.get(f"/api/projects/{project['id']}/tasks/{task['id']}").status_code == 404
 
 
 def test_task_access_is_scoped_through_owned_project_and_client(
@@ -180,9 +182,13 @@ def test_task_access_is_scoped_through_owned_project_and_client(
     assert api_client.get(missing_task_url).json() == {"detail": "Task not found"}
     assert api_client.patch(missing_task_url, json={"status": "done"}).status_code == 404
     assert api_client.get(f"/api/projects/{owned_project['id']}/tasks").json() == []
+    assert api_client.delete(foreign_task_url).status_code == 404
 
     login(api_client, first_owner.email)
     assert api_client.get(foreign_task_url).json() == foreign_task
+    deleted = api_client.delete(foreign_task_url)
+    assert deleted.status_code == 204
+    assert api_client.get(foreign_task_url).status_code == 404
 
 
 def test_task_records_persist_after_database_reopen(

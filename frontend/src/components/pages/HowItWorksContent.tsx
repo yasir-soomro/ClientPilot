@@ -269,13 +269,13 @@ export default function HowItWorksContent() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/register"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition duration-200 hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-600/25 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/30 motion-reduce:transform-none"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#343a40] bg-[#343a40] px-6 text-sm font-semibold text-white shadow-lg shadow-[#343a40]/20 transition duration-200 hover:-translate-y-0.5 hover:border-[#212529] hover:bg-[#212529] hover:shadow-xl hover:shadow-[#212529]/25 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/30 motion-reduce:transform-none"
               >
                 Get started <ArrowRight size={17} aria-hidden="true" />
               </Link>
               <Link
                 href="/about"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-6 text-sm font-semibold text-slate-800 transition duration-200 hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-white hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 motion-reduce:transform-none"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#c6cbd1] bg-[#f3f4f5] px-6 text-sm font-semibold text-[#343a40] transition duration-200 hover:-translate-y-0.5 hover:border-[#6c757d] hover:bg-[#e9ecef] hover:text-[#212529] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25 motion-reduce:transform-none"
               >
                 About ClientPilot
               </Link>
@@ -478,13 +478,13 @@ export default function HowItWorksContent() {
                   aria-controls="workflow-panel"
                   tabIndex={activeStep === index ? 0 : -1}
                   onClick={() => setActiveStep(index)}
-                  className={`flex min-h-16 items-center gap-3 border-b-2 px-4 text-left transition-colors focus-visible:z-10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-indigo-500/25 sm:px-5 ${
+                  className={`flex min-h-16 items-center gap-3 border-b-2 px-4 text-left transition-colors focus-visible:z-10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-[#6c757d]/30 sm:px-5 ${
                     activeStep === index
-                      ? "border-indigo-600 bg-white text-indigo-800"
-                      : "border-transparent text-slate-500 hover:bg-white/70 hover:text-slate-900"
+                      ? "border-[#495057] bg-white text-[#343a40]"
+                      : "border-transparent text-slate-500 hover:bg-white/70 hover:text-[#343a40]"
                   }`}
                 >
-                  <span className="text-xs font-bold tracking-wider text-indigo-400">
+                  <span className="text-xs font-bold tracking-wider text-gray-500">
                     {number}
                   </span>
                   <Icon size={18} aria-hidden="true" />
@@ -571,12 +571,12 @@ export default function HowItWorksContent() {
                       aria-expanded={isOpen}
                       aria-controls={`faq-answer-${index}`}
                       onClick={() => setOpenFaq(isOpen ? null : index)}
-                      className="flex min-h-16 w-full items-center justify-between gap-4 py-4 text-left text-base font-semibold text-slate-900 transition hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 sm:text-lg"
+                      className="flex min-h-16 w-full items-center justify-between gap-4 py-4 text-left text-base font-semibold text-slate-900 transition hover:text-[#343a40] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#6c757d]/25 sm:text-lg"
                     >
                       {question}
                       <ChevronDown
                         size={20}
-                        className={`shrink-0 text-indigo-600 transition-transform duration-200 motion-reduce:transition-none ${
+                        className={`shrink-0 text-[#495057] transition-transform duration-200 motion-reduce:transition-none ${
                           isOpen ? "rotate-180" : ""
                         }`}
                         aria-hidden="true"
